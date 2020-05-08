@@ -11,6 +11,9 @@ Webbapplikation för att legitimera medborgare med BankID.
 - NodeJS https://nodejs.org/en/download/
 - NPM (följer med NodeJS)
 
+### Krav för att legitimera mot testmiljön (test.env)
+1. BankID test: https://doc.funktionstjanster.se/#Utgivare/BankID/
+
 ### Guide för att starta webappen lokalt
 
 1. Gå in i mappen där projektet ligger med CMD/Powershell
