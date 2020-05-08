@@ -32,7 +32,7 @@ Webbapplikation för att legitimera medborgare med BankID.
 
 1. Skapa en Azure App Service
 2. Skapa en Azure Web App som kör Linux med NodeJS 12.04
-3. Konfigurera miljö/environment-variabler för WebAppen så att dom innehåller samma information som .env/test.env
+3. Konfigurera miljö/environment-variabler för WebAppen så att dom innehåller samma information som .env/test.env (förutom PORT) - DISPLAY_NAME, POLICY, REQUEST_ENDPOINT måste uppdateras mot era produktions API-nycklar och endpoint för att fungera mot riktiga BankID.
 4. Deploya webbappen till Azure med VSCode https://docs.microsoft.com/en-us/azure/javascript/tutorial-vscode-azure-app-service-node-01?tabs=bash
 
 ### Skapa Teams app för webappen som personlig flik
