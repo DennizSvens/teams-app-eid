@@ -17,6 +17,7 @@ Webbapplikation för att legitimera medborgare med BankID.
 2. Skriv: `npm install`
 3. Döp om filen test.env till .env (Används för att komma åt CGIs testmiljö som är öppen för alla)
 4. Starta sedan appen med `npm start`
+5. Gå till webbläsaren och skriv in http://localhost:3000
 
 # Installera i produktionsmiljö (Azure)
 
