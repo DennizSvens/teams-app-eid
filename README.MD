@@ -1,7 +1,8 @@
 # Botkyrka EID Teams App
 
 Skapad av Denniz Svens / Liminity AB för Botkyrka Kommun
-Webapplikation för att legitimera medborgare med BankID.
+
+Webbapplikation för att legitimera medborgare med BankID.
 
 # Installera i lokal testmiljö
 
