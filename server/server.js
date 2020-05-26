@@ -5,6 +5,7 @@ const { v4 } = require("uuid");
 const { port } = require("../config");
 const fs = require("fs");
 const { StartBankIDAuthentication } = require("./bankid");
+const { InitFrejaRESTAPiAuthRequest } = require("./frejaeid_restapi");
 var app = express();
 app.use("/public/", express.static(__dirname + "/../public"));
 app.set("viewengine", "hbs");
@@ -21,6 +22,9 @@ app.get("/", (req, res) => {
 io.on("connection", function(socket) {
   socket.on("startBankIdAuthentication", function(data) {
     StartBankIDAuthentication(data.ssn, socket);
+  });
+  socket.on("initFrejaAuthentication", function(data) {
+    InitFrejaRESTAPiAuthRequest(data.ssn, socket);
   });
 });
 

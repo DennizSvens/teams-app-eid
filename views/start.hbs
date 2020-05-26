@@ -1,14 +1,16 @@
 {{> head}}
 <script src="/public/js/jquery-3.4.1.min.js"></script>
 <script src="/public/js/sweetalert.js"></script>
+<script src="/public/js/valfor.js"></script>
 
 <form id="EidAuthForm" class="form-eidauth">
     <img class="mb-4 logo" src="/public/logo-black.png" height="108" width="85">
-    <h1 class="h3 font-weight-normal">Legitimera medborgare med BankID!</h1>
+    <h1 class="h3 font-weight-normal">Legitimera medborgare</h1>
     <label for="inputSSN" class="sr-only">Personnummer</label>
     <input type="username" id="inputSSN" class="form-control mb-1" placeholder="200001010000 (12 siffror)" name="ssn"
         autofocus>
-    <button class="btn btn-lg btn-success btn-block" id="submitssn" type="submit">Legitimera</button>
+    <button class="btn btn-lg btn-success btn-block" id="submitbankid" type="button">Legitimera med BankID</button>
+    <button class="btn btn-lg btn-success btn-block" id="submitfrejaeid" type="button">Legitimera med Freja eID</button>
     <p class="mt-5 mb-3 text-muted">&copy; Botkyrka Kommun 2020 </p>
 </form>
 <script src="/socket.io/socket.io.js"></script>
