@@ -1,7 +1,7 @@
 # Botkyrka EID Teams App
 
 Skapad av Denniz Svens / Liminity AB för Botkyrka Kommun
-Tillägg för av Daniel Sörlöv
+Tillägg för Freja eID av Daniel Sörlöv
 
 Webbapplikation för att legitimera medborgare tänkt att integreras i Teams
 
