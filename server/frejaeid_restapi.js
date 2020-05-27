@@ -34,7 +34,7 @@ function CheckFrejaAuthResponse(transactionId) {
   });
 }
 
-const InitFrejaRESTAPiAuthRequest = (ssn, socket) => {
+const InitAuthenticationFrejaAPI = (ssn, socket) => {
 
   var userInfo = {
       'country': "SE",
@@ -61,13 +61,14 @@ const InitFrejaRESTAPiAuthRequest = (ssn, socket) => {
   request.post(requestOptions, (err, response, body) => {
 
     if (err) {
-      return socket.emit("frejaAuthStatus", { STATUS: "UNKNOWN_ERROR" });
+      return socket.emit("authenticationStatus", { STATUS: "ERROR", MESSAGE: "A communication error occured" });
     }
     
     const responseObject = JSON.parse(body);    
     if (responseObject.code) {
-        return socket.emit("frejaAuthStatus", { STATUS: "API_ERROR", CODE: responseObject.code, DETAILS: responseObject.message });
+        return socket.emit("authenticationStatus", { STATUS: "ERROR", REMOTE_STATUS: responseObject.code, REMOTE_DETAILS: responseObject.message, MESSAGE: responseObject.message});
     }
+    socket.emit("authenticationStatus", { STATUS: "INITIALIZED"} );                
        
     var i = 1;    
     const CheckResponseLoop = async () => {
@@ -76,38 +77,49 @@ const InitFrejaRESTAPiAuthRequest = (ssn, socket) => {
         var parsedResponse = JSON.parse(checkResponse);
 
         if (parsedResponse.code) {
-            socket.emit("frejaAuthStatus", { STATUS: "API_ERROR", CODE: parsedResponse.code, DETAILS: parsedResponse.message });
+            socket.emit("authenticationStatus", { STATUS: "ERROR", REMOTE_STATUS: parsedResponse.code, REMOTE_DETAILS: parsedResponse.message, MESSAGE: parsedResponse.message });
             i = 61;
         } else {
             switch (parsedResponse.status) {
                 case 'STARTED':
-                case 'DELIVERED_TO_MOBILE':
-                    socket.emit("frejaAuthStatus", { STATUS: parsedResponse.status });
+                    socket.emit("authenticationStatus", { STATUS: "PENDING_NO_USER"} );                
                     i++;
                     break;
+                case 'DELIVERED_TO_MOBILE':
+                    socket.emit("authenticationStatus", { STATUS: "PENDING_DELIVERED" });
+                    break;
                 case 'REJECTED':
+                    socket.emit("authenticationStatus", { STATUS: "ERROR", REMOTE_STATUS: parsedResponse.status, REMOTE_DETAILS: "The transaction was cancelled by the rp", MESSAGE: "The transaction was cancelled by the rp" });
+                    i = 61;
+                    break;
                 case 'EXPIRED':
+                    socket.emit("authenticationStatus", { STATUS: "EXPIRED"} );                
+                    i = 61;
+                    break;
                 case 'RP_CANCELED':
+                    socket.emit("authenticationStatus", { STATUS: "ERROR", REMOTE_STATUS: parsedResponse.status, REMOTE_DETAILS: "The transaction was cancelled by the rp", MESSAGE: "The transaction was cancelled by the rp" });
+                    i = 61;
+                    break;
                 case 'CANCELED':
-                    socket.emit("frejaAuthStatus", { STATUS: parsedResponse.status });
+                    socket.emit("authenticationStatus", { STATUS: "USER_DECLINED" });
                     i = 61;
                     break;
                 case 'APPROVED':
-                    socket.emit("frejaAuthStatus", { STATUS: parsedResponse.status, SUBJECT: "" });
+                    socket.emit("authenticationStatus", { STATUS: "COMPLETED", DISPLAY_NAME: "" });
                     i = 61;
                     break;
-                default:           
-                    i++;
             }
         }
+        i++;
         if (i <= 60) {
           CheckResponseLoop();
         }
       }, 3000);
     };
     CheckResponseLoop();
+
     return responseObject.authRef;
   });
 };
 
-module.exports = { InitFrejaRESTAPiAuthRequest };
+module.exports = { InitAuthenticationFrejaAPI };

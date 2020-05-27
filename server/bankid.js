@@ -1,118 +1,141 @@
 const { v4 } = require("uuid");
 const fs = require("fs");
-const { endpoint, policy, rpDisplayName, caPath } = require("../config");
 const request = require("request");
+const soap = require("soap");
+
 function CollectBankIDResponse(transactionId, orderRef) {
-  const messageID = v4();
-  //Sending RAW XML since EasySoap/soap libraries does not have support for MessageID which is required by CGI
-  XMLRequestData = `<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:v2="http://mobilityguard.com/grp/service/v2.0/">
-      <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing"><wsa:Action>http://mobilityguard.com/grp/service/v2.0/GrpServicePortType/CollectRequest</wsa:Action><wsa:MessageID>uuid:${messageID}</wsa:MessageID></soap:Header>
-      <soap:Body>
-         <v2:CollectRequest>
-            <policy>${policy}</policy>
-            <provider>bankid</provider>
-            <rpDisplayName>${rpDisplayName}</rpDisplayName>
-            <transactionId>${transactionId}</transactionId>
-            <orderRef>${orderRef}</orderRef>
-         </v2:CollectRequest>
-      </soap:Body>
-   </soap:Envelope>`;
+    const messageID = v4();
 
-  CollectOptions = {
-    url: endpoint,
-    headers: {
-      "Content-Type": "application/soap+xml",
-      charset: "UTF-8",
-      action:
-        "http://mobilityguard.com/grp/service/v2.0/GrpServicePortType/CollectRequest",
-      "Content-length": XMLRequestData.length
-    },
-    ca: fs.readFileSync(caPath),
-    body: XMLRequestData
-  };
-
-  return new Promise(function(resolve, reject) {
-    request.post(CollectOptions, (err, response, body) => {
-      resolve(body);
-    });
-  });
-}
-const StartBankIDAuthentication = (ssn, socket) => {
-  const messageID = v4();
-  const generatedTransactionID = v4();
-  //Sending RAW XML since EasySoap/soap libraries does not have support for MessageID which is required by CGI
-  XMLRequestData = `<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:v2="http://mobilityguard.com/grp/service/v2.0/">
-  <soap:Header xmlns:wsa="http://www.w3.org/2005/08/addressing"><wsa:Action soap:mustUnderstand="1">http://mobilityguard.com/grp/service/v2.0/GrpServicePortType/AuthenticateRequest</wsa:Action><wsa:MessageID soap:mustUnderstand="1">uuid:${messageID}</wsa:MessageID></soap:Header>
-  <soap:Body>
-     <v2:AuthenticateRequest>
-        <policy>${policy}</policy>
-        <provider>bankid</provider>
-        <rpDisplayName>${rpDisplayName}</rpDisplayName>
-        <transactionId>${generatedTransactionID}</transactionId>
-        <subjectIdentifier>${ssn}</subjectIdentifier>
-     </v2:AuthenticateRequest>
-  </soap:Body>
-  </soap:Envelope>`;
-  AuthenticateOptions = {
-    url: endpoint,
-    headers: {
-      "Content-Type": "application/soap+xml",
-      charset: "UTF-8",
-      action:
-        "http://mobilityguard.com/grp/service/v2.0/GrpServicePortType/AuthenticateRequest",
-      "Content-length": XMLRequestData.length
-    },
-    ca: fs.readFileSync(caPath),
-    body: XMLRequestData
-  };
-
-  request.post(AuthenticateOptions, (err, response, body) => {
-    if (err) {
-      return socket.emit("bankIDResponse", { STATUS: "UNKNOWN_ERROR" });
-    }
-    const orderRef = body.match("<orderRef>(.*?)</orderRef>");
-    if (!orderRef || !orderRef[1]) {
-      return socket.emit("bankIDResponse", { STATUS: "NO_ORDER_REF" });
-    }
-    const transactionId = body.match("<transactionId>(.*?)</transactionId>")[1];
-    var i = 1;
-    const BankIDResponseLoop = async () => {
-      setTimeout(async function() {
-        var bodyResp = await CollectBankIDResponse(
-          transactionId[1],
-          orderRef[1],
-          socket
-        );
-        var progressStatus = bodyResp.match(
-          "<progressStatus>(.*?)</progressStatus>"
-        );
-        var BankIDName = bodyResp.match("<displayName>(.*?)</displayName>");
-        var faultStatus = bodyResp.match("<faultStatus>(.*?)</faultStatus>");
-        if (faultStatus && faultStatus[1] == "USER_CANCEL") {
-          socket.emit("bankIDResponse", { STATUS: "USER_CANCEL" });
-          i = 60;
-        } else if (faultStatus && faultStatus[1] == "EXPIRED_TRANSACTION") {
-          socket.emit("bankIDResponse", {
-            STATUS: "EXPIRED_TRANSACTION"
-          });
-          i = 60;
-        } else if (progressStatus[1] == "COMPLETE") {
-          socket.emit("bankIDResponse", {
-            STATUS: "COMPLETE",
-            BankIDName: BankIDName[1]
-          });
-          i = 60;
-        }
-
-        i++;
-        if (i <= 60) {
-          BankIDResponseLoop();
-        }
-      }, 3000);
+    // Setup params for the call
+    var requestOptions = {
+        'policy': process.env.FUNKTIONSTJANSTER_POLICY,
+        'provider': 'bankid',
+        'rpDisplayName': process.env.FUNKTIONSTJANSTER_RP_DISPLAYNAME,
+        'transactionId': transactionId,
+        'orderRef': orderRef
     };
-    BankIDResponseLoop();
-    return transactionId;
-  });
+  
+    // Make sure we accept any remote CA that is allowed
+    var clientOptions = request.defaults({
+       ca: fs.readFileSync(process.env.FUNKTIONSTJANSTER_CACERT),
+    });
+    
+    // Just return a promise and later resolve with the result of the transaction
+    return new Promise(function(resolve, reject) {
+        soap.createClient(process.env.FUNKTIONSTJANSTER_ENDPOINT, { request: clientOptions, forceSoap12Headers: true }, function(err, client) {
+          client.addHttpHeader('Content-Type','application/soap+xml');
+          client.wsdl.xmlnsInHeader = 'xmlns:wsa="http://www.w3.org/2005/08/addressing"';
+          client.addSoapHeader('<wsa:Action soap:mustUnderstand="1">http://mobilityguard.com/grp/service/v2.0/GrpServicePortType/CollectRequest</wsa:Action>');
+          client.addSoapHeader('<wsa:MessageID soap:mustUnderstand="1">uuid:' + messageID + '</wsa:MessageID>');
+          client.Collect(requestOptions, function(err, result) {
+            resolve({'err': err,'result': result});
+          });
+        });
+    });      
+}
+
+
+const InitAuthenticationFTBankID = (ssn, socket) => {
+    const messageID = v4();
+    const generatedTransactionID  = v4();
+
+    // Setup params for the call
+    var requestOptions = {
+        'policy': process.env.FUNKTIONSTJANSTER_POLICY,
+        'provider': 'bankid',
+        'rpDisplayName': process.env.FUNKTIONSTJANSTER_RP_DISPLAYNAME,
+        'transactionId': generatedTransactionID ,
+        'subjectIdentifier': ssn
+    };
+  
+    // Make sure we accept any remote CA that is allowed
+    var clientOptions = request.defaults({
+       ca: fs.readFileSync(process.env.FUNKTIONSTJANSTER_CACERT),
+    });
+    
+    // Send request
+    soap.createClient(process.env.FUNKTIONSTJANSTER_ENDPOINT, { request: clientOptions, forceSoap12Headers: true }, function(err, client) {
+      client.addHttpHeader('Content-Type','application/soap+xml');
+      client.wsdl.xmlnsInHeader = 'xmlns:wsa="http://www.w3.org/2005/08/addressing"';
+      client.addSoapHeader('<wsa:Action soap:mustUnderstand="1">http://mobilityguard.com/grp/service/v2.0/GrpServicePortType/AuthenticateRequest</wsa:Action>');
+      client.addSoapHeader('<wsa:MessageID soap:mustUnderstand="1">uuid:' + messageID + '</wsa:MessageID>');
+      
+      //console.log(client.wsdl);
+      
+      client.Authenticate(requestOptions, function(err, result) {
+        if (err) {
+            // Something went horribly wrong, lets send a message and then go and die
+            var regexp = /<S:Reason><S:Text xml:lang="en">(.*)<\/S:Text><\/S:Reason>.*<faultStatus>(.*)<\/faultStatus>.*<detailedDescription>(.*)<\/detailedDescription>/g;
+            var matches = regexp.exec(err.response.body);            
+            socket.emit("authenticationStatus", { STATUS: "ERROR", REMOTE_STATUS: matches[2], REMOTE_DETAILS: matches[3], MESSAGE: matches[1] });
+            return;
+        } else {
+            
+            //Lets update client on our success
+            socket.emit("authenticationStatus", { STATUS: "INITIALIZED" });            
+            
+            // Yay! The remote API accepted our offering and created a transaction
+            var orderRef = result.orderRef;
+            var transactionId = result.transactionId;
+            var i = 1;
+
+            //Define worker loop
+            const BankIDResponseLoop = async () => {
+              setTimeout(async function() {
+                var pollResponse = await CollectBankIDResponse(transactionId,orderRef);
+
+                // The response was an error, this means that we crashed somewhere in the loop. Tell client and then die
+                if (pollResponse.err) {
+                    var regexp = /<S:Reason><S:Text xml:lang="en">(.*)<\/S:Text><\/S:Reason>.*<faultStatus>(.*)<\/faultStatus>.*<detailedDescription>(.*)<\/detailedDescription>/g;
+                    var matches = regexp.exec(pollResponse.err.response.body);        
+
+                    switch (matches[2]) {
+                        case "USER_CANCEL":
+                            socket.emit("authenticationStatus", { STATUS: "USER_DECLINED"} );                
+                            i = 61;
+                            break;                                                    
+                        case "EXPIRED_TRANSACTION":
+                            socket.emit("authenticationStatus", { STATUS: "EXPIRED"} );                
+                            i = 61;
+                            break;                        
+                        default:
+                            socket.emit("authenticationStatus", { STATUS: "ERROR", REMOTE_STATUS: matches[2], REMOTE_DETAILS: matches[3], MESSAGE: matches[1] });
+                            i = 61;
+                    }
+                    
+                } else {
+                    // Check if we completed, then end otherwise just pump information to client about our status.
+                    switch(pollResponse.result.progressStatus) {
+                        case "OUTSTANDING_TRANSACTION":
+                            socket.emit("authenticationStatus", { STATUS: "PENDING_NO_USER" });
+                            break;
+                        case "NO_CLIENT":
+                            socket.emit("authenticationStatus", { STATUS: "PENDING_NO_USER" });
+                            break;
+                        case "COMPLETE":
+                            socket.emit("authenticationStatus", { STATUS: "COMPLETED", DISPLAY_NAME: pollResponse.result.displayName });
+                            i = 61;
+                            break;
+                        default:
+                            socket.emit("authenticationStatus", { STATUS: "PENDING", REMOTE_STATUS: pollResponse.result.progressStatus });                        
+                    }
+                }
+
+                // Failsafe, we only do this loop 60 times, then exit
+                i++;
+                if (i <= 60) {
+                  BankIDResponseLoop();
+                }
+              }, 3000);
+            };
+
+            // Start looping and poll for results
+            BankIDResponseLoop();
+            
+            return transactionId;
+        }
+      });
+    });
 };
 
-module.exports = { StartBankIDAuthentication };
+module.exports = { InitAuthenticationFTBankID };
