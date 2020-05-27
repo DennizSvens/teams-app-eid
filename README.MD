@@ -18,7 +18,7 @@ Du måste ha tillgång till en legitimeringstjänst, just nu stöjds dessa två
 * BankID via Funktionstjänster (CGI): https://doc.funktionstjanster.se/#Utgivare/BankID/
 * Freja eID direkt via deras API: https://org.frejaeid.com/for-utvecklare/
 
-unktionstjänster från CGI är föraktiverad för att denna testmiljö inte kräver unika/egna inloggningsnycklar, men du kan enkelt aktivera exempelvis Freja eID genom att ställa in det i konfigurationen (se nedan).
+Funktionstjänster från CGI är föraktiverad för att denna testmiljö inte kräver unika/egna inloggningsnycklar, men du kan enkelt aktivera exempelvis Freja eID genom att ställa in det i konfigurationen (se nedan).
 
 ### Guide för att starta webappen lokalt
 
