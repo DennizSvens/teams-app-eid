@@ -1,8 +1,9 @@
 # Botkyrka EID Teams App
 
 Skapad av Denniz Svens / Liminity AB för Botkyrka Kommun
+Tillägg för av Daniel Sörlöv
 
-Webbapplikation för att legitimera medborgare med BankID.
+Webbapplikation för att legitimera medborgare tänkt att integreras i Teams
 
 # Installera i lokal testmiljö
 
@@ -12,15 +13,19 @@ Webbapplikation för att legitimera medborgare med BankID.
 - NPM (följer med NodeJS)
 
 ### Krav för att legitimera mot testmiljön (test.env)
-1. BankID test: https://doc.funktionstjanster.se/#Utgivare/BankID/
+Du måste ha tillgång till en legitimeringstjänst, just nu stöjds dessa två
+* BankID via Funktionstjänster (CGI): https://doc.funktionstjanster.se/#Utgivare/BankID/
+* Freja eID direkt via deras API: https://org.frejaeid.com/for-utvecklare/
+
+unktionstjänster från CGI är föraktiverad för att denna testmiljö inte kräver unika/egna inloggningsnycklar, men du kan enkelt aktivera exempelvis Freja eID genom att ställa in det i konfigurationen (se nedan).
 
 ### Guide för att starta webappen lokalt
 
 1. Gå in i mappen där projektet ligger med CMD/Powershell
 2. Skriv: `npm install`
-3. Döp om filen test.env till .env (Används för att komma åt CGIs testmiljö som är öppen för alla)
-4. Starta sedan appen med `npm start`
-5. Gå till webbläsaren och skriv in http://localhost:3000
+3. Döp om filen test.env till .env (ställ in variablerna i filen för att anpassa tjänsterna)
+5. Starta sedan appen med `npm start`
+6. Gå till webbläsaren och skriv in http://localhost:3000
 
 # Installera i produktionsmiljö (Azure)
 

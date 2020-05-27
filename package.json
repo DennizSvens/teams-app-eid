@@ -19,7 +19,7 @@
     "easysoap": "^2.2.0",
     "express": "^4.17.1",
     "expressjs": "^1.0.1",
-    "hbs": "^4.1.0",
+    "hbs": "^4.1.1",
     "moment": "^2.24.0",
     "moment-round": "^1.0.1",
     "mongoose": "^5.9.5",
