@@ -1,0 +1,150 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "type": "string"
+        },
+        "Use CGI Funktionstjänster": {
+            "type": "bool",
+            "defaultValue": "true"
+        },
+        "CGI API Endpoint (wsdl)": {
+            "type": "string",
+            "defaultValue": "https://grpt.funktionstjanster.se:18898/grp/v2?wsdl"
+        },
+        "CGI API Policy": {
+            "type": "string",
+            "defaultValue": "logtest020"
+        },
+        "CGI Displayname": {
+            "type": "string",
+            "defaultValue": "test"
+        },
+        "Use Freja eID": {
+            "type": "bool",
+            "defaultValue": "true"
+        },
+        "Freja API Service Endpoint": {
+            "type": "string",
+            "defaultValue": "https://services.test.frejaeid.com"
+        },
+        "Freja API Resource Endpoint": {
+            "type": "string",
+            "defaultValue": "https://resources.test.frejaeid.com"
+        },
+        "Freja API service requesting certificate path": {
+            "type": "string",
+            "defaultValue": "certs/freja_restapi_client_test.pfx"
+        },
+        "Freja API service requesting certificate password": {
+            "type": "string",
+            "defaultValue": "password"
+        },
+        "Freja minimum registration level": {
+            "type": "string",
+            "allowedValues": [
+                "BASIC",
+                "EXTENDED",
+                "PLUS"
+            ],
+            "defaultValue": "BASIC"
+        }
+    },
+    "outputs": {
+        "URL": {
+            "type": "string",
+            "value": "[concat('https://', parameters('name'), '.azurewebsites.net')]"
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-11-01",
+            "name": "[parameters('name')]",
+            "type": "Microsoft.Web/sites",
+            "location": "West Europe",
+            "tags": {
+            },
+
+            "dependsOn": [
+                "[concat('Microsoft.Web/serverfarms/', parameters('name'), '-AppServicePlan')]"
+            ],
+            "properties": {
+                "name": "[parameters('name')]",
+                "siteConfig": {
+                    "appSettings": [
+                    ],
+                    "linuxFxVersion": "NODE|10.14",
+                    "alwaysOn": true
+                },
+                "serverFarmId": "[concat('/subscriptions/', subscription().subscriptionId, '/resourcegroups/', resourceGroup().name, '/providers/Microsoft.Web/serverfarms/', parameters('name'), '-AppServicePlan')]",
+                "hostingEnvironment": "[concat(parameters('name'),'-AppServicePlan')]",
+                "clientAffinityEnabled": false
+            },
+            "resources": [
+                {
+                    "type": "sourcecontrols",
+                    "apiVersion": "2018-02-01",
+                    "name": "web",
+                    "location": "West Europe",
+                    "properties": {
+                        "repoUrl": "https://github.com/DennizSvens/teams-app-eid",
+                        "branch": "master",
+                        "isManualIntegration": true
+                    },
+                    "dependsOn": [
+                        "[concat('Microsoft.Web/sites/', parameters('name'))]"
+                    ]
+                },
+                {
+                    "name": "appsettings",
+                    "type": "config",
+                    "apiVersion": "2018-02-01",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+                    ],
+                    "tags": {
+                        "displayName": "appsettings"
+                    },
+                    "properties": {
+                        "FUNKTIONSTJANSTER_ENABLE": "[toLower(string(parameters('Use CGI Funktionstjänster')))]",
+                        "FUNKTIONSTJANSTER_ENDPOINT": "[parameters('CGI API Endpoint (wsdl)')]",
+                        "FUNKTIONSTJANSTER_POLICY": "[parameters('CGI API Policy')]",
+                        "FUNKTIONSTJANSTER_RP_DISPLAYNAME": "[parameters('CGI Displayname')]",
+                        "FUNKTIONSTJANSTER_CACERT": "certs/bankid_steria.pem",
+                        "FREJA_RESTAPI_ENABLE": "[toLower(string(parameters('Use Freja eID')))]",
+                        "FREJA_RESTAPI_CERT": "[parameters('Freja API service requesting certificate path')]",
+                        "FREJA_RESTAPI_PASS": "[parameters('Freja API service requesting certificate password')]",
+                        "FREJA_RESTAPI_CACERT": "certs/freja_restapi_webca_test.pem",
+                        "FREJA_RESTAPI_SIGNING_CERT": "certs/freja_restapi_signing_test.pem",
+                        "FREJA_RESTAPI_SERVICE_ENDPOINT": "[parameters('Freja API Service Endpoint')]",
+                        "FREJA_RESTAPI_RESOURCE_ENDPOINT": "[parameters('Freja API Resource Endpoint')]",
+                        "FREJA_MINIMUM_REGISTRATION_LEVEL": "[parameters('Freja minimum registration level')]"
+                    }
+                }
+            ]
+        },
+        {
+            "apiVersion": "2018-11-01",
+            "name": "[concat(parameters('name'),'-AppServicePlan')]",
+            "type": "Microsoft.Web/serverfarms",
+            "location": "West Europe",
+            "kind": "linux",
+            "tags": {
+            },
+            "properties": {
+                "name": "[concat(parameters('name'),'-AppServicePlan')]",
+                "workerSize": "3",
+                "workerSizeId": "3",
+                "numberOfWorkers": "1",
+                "reserved": true,
+                "hostingEnvironment": ""
+            },
+            "sku": {
+                "Tier": "PremiumV2",
+                "Name": "P1V2"
+            }
+        }
+
+    ]
+}
