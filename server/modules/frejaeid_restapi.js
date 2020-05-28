@@ -42,7 +42,7 @@ const InitAuthenticationFrejaAPI = (ssn, socket) => {
   };
 
   var requestObject = {
-    attributesToReturn: ["EMAIL_ADDRESS", "RELYING_PARTY_USER_ID"],
+    attributesToReturn: ["EMAIL_ADDRESS", "RELYING_PARTY_USER_ID", "BASIC_USER_INFO"],
     minRegistrationLevel: process.env.FREJA_MINIMUM_REGISTRATION_LEVEL,
     userInfoType: "SSN",
     userInfo: convertObjectToBase64String(userInfo)
@@ -137,7 +137,7 @@ const InitAuthenticationFrejaAPI = (ssn, socket) => {
             case "APPROVED":
               socket.emit("authenticationStatus", {
                 STATUS: "COMPLETED",
-                DISPLAY_NAME: ""
+                DISPLAY_NAME: parsedResponse.requestedAttributes.basicUserInfo.name + ' ' + parsedResponse.requestedAttributes.basicUserInfo.surname
               });
               i = 61;
               break;

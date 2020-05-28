@@ -1,8 +1,7 @@
 # Botkyrka EID Teams App
 
 Skapad av Denniz Svens / Liminity AB för Botkyrka Kommun
-
-Tillägg för Freja eID av Daniel Sörlöv
+Tillägg för Freja eID och Svensk e-Identitet av Daniel Sörlöv
 
 Webbapplikation för att legitimera medborgare tänkt att integreras i Teams
 
@@ -18,7 +17,7 @@ Du måste ha tillgång till en legitimeringstjänst, just nu stöjds dessa två
 * BankID via Funktionstjänster (CGI): https://doc.funktionstjanster.se/#Utgivare/BankID/
 * Freja eID direkt via deras API: https://org.frejaeid.com/for-utvecklare/
 
-Funktionstjänster från CGI är föraktiverad för att denna testmiljö inte kräver unika/egna inloggningsnycklar, men du kan enkelt aktivera exempelvis Freja eID genom att ställa in det i konfigurationen (se nedan).
+BankID från Funktionstjänster samt Freja eID REST API är föraktiverade med generiska testnycklar i respektive testmiljöer.
 
 ### Guide för att starta webappen lokalt
 
