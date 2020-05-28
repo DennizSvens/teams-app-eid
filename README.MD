@@ -1,4 +1,5 @@
 # Botkyrka EID Teams App
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FDennizSvens%2Fteams-app-eid%2Fmaster%2Fazuredeploy.json)
 
 Skapad av Denniz Svens / Liminity AB för Botkyrka Kommun
 
