@@ -28,7 +28,7 @@ if (process.env.FUNKTIONSTJANSTER_BANKID == "true") {
   );
 }
 if (process.env.FUNKTIONSTJANSTER_FREJA == "true") {
-  console.log(`Will use Freja EID via Funktionstjänster`);
+  console.log(`Will use Freja eID via Funktionstjänster`);
   modules.push(
     new Module(
       "initAuthenticationFTFrejaEID",
@@ -51,7 +51,7 @@ if (process.env.SVENSKEIDENTITET_BANKID == "true") {
   );
 }
 if (process.env.SVENSKEIDENTITET_FREJA == "true") {
-  console.log(`Will use Freja EID via Svensk e-Identitet`);
+  console.log(`Will use Freja eID via Svensk e-Identitet`);
   modules.push(
     new Module(
       "initAuthenticationSEIDFrejaEID",
