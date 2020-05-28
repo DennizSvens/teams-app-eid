@@ -3,13 +3,13 @@ const fs = require("fs");
 const request = require("request");
 const soap = require("soap");
 
-function CollectBankIDResponse(transactionId, orderRef) {
+function CollectBankIDResponse(transactionId, orderRef, provider) {
   const messageID = v4();
 
   // Setup params for the call
   var requestOptions = {
     policy: process.env.FUNKTIONSTJANSTER_POLICY,
-    provider: "bankid",
+    provider: provider,
     rpDisplayName: process.env.FUNKTIONSTJANSTER_RP_DISPLAYNAME,
     transactionId: transactionId,
     orderRef: orderRef
@@ -46,13 +46,21 @@ function CollectBankIDResponse(transactionId, orderRef) {
 }
 
 const InitAuthenticationFTBankID = (ssn, socket) => {
+    return InitAuthentication(ssn, 'bankid', socket);
+}
+
+const InitAuthenticationFTFrejaEID = (ssn, socket) => {
+    return InitAuthentication(ssn, 'freja', socket);
+}
+
+function InitAuthentication(ssn, provider, socket) {
   const messageID = v4();
   const generatedTransactionID = v4();
 
   // Setup params for the call
   var requestOptions = {
     policy: process.env.FUNKTIONSTJANSTER_POLICY,
-    provider: "bankid",
+    provider: provider,
     rpDisplayName: process.env.FUNKTIONSTJANSTER_RP_DISPLAYNAME,
     transactionId: generatedTransactionID,
     subjectIdentifier: ssn
@@ -108,7 +116,8 @@ const InitAuthenticationFTBankID = (ssn, socket) => {
             setTimeout(async function() {
               var pollResponse = await CollectBankIDResponse(
                 transactionId,
-                orderRef
+                orderRef,
+                provider
               );
 
               // The response was an error, this means that we crashed somewhere in the loop. Tell client and then die
@@ -182,4 +191,4 @@ const InitAuthenticationFTBankID = (ssn, socket) => {
   );
 };
 
-module.exports = { InitAuthenticationFTBankID };
+module.exports = { InitAuthenticationFTBankID, InitAuthenticationFTFrejaEID };
