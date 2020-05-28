@@ -1,45 +1,103 @@
 {
-    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
         "name": {
             "type": "string"
         },
-        "Use CGI Funktionstjänster": {
+        "Logo URL": {
+            "type": "string",
+            "defaultValue": "https://www.botkyrka.se/images/18.3f7cdc58159ed1e625a1a2f8/1486981413543/bk_logo_centr_cmyk_neg_2015.png"
+        },
+        "Use CGI Funktionstjänster API for BankID": {
             "type": "bool",
-            "defaultValue": "true"
+            "defaultValue": true
+        },
+        "Use CGI Funktionstjänster API for Freja eID": {
+            "type": "bool",
+            "defaultValue": false
         },
         "CGI API Endpoint (wsdl)": {
             "type": "string",
-            "defaultValue": "https://grpt.funktionstjanster.se:18898/grp/v2?wsdl"
+            "defaultValue": "https://grpt.funktionstjanster.se:18898/grp/v2?wsdl",
+            "metadata": {
+                "description": "Endpoint to use for funktionstjänster SOAP API (Only needed when Use CGI Funktionstjänster is true)"
+            }
         },
         "CGI API Policy": {
             "type": "string",
-            "defaultValue": "logtest020"
+            "defaultValue": "logtest020",
+            "metadata": {
+                "description": "Policy/API-key provided by CGI (Only needed when Use CGI Funktionstjänster is true)"
+            }
         },
         "CGI Displayname": {
             "type": "string",
+            "defaultValue": "test",
+            "metadata": {
+                "description": "Displayname used in BankID/Freja on auth (Only needed when Use CGI Funktionstjänster is true)"
+            }
+        },
+        "Use Svensk e-identitet API for BankID": {
+            "type": "bool",
+            "defaultValue": false
+        },
+        "Use Svensk e-identitet API for Freja eID": {
+            "type": "bool",
+            "defaultValue": false
+        },
+        "Svensk e-identitet API key": {
+            "type": "string",
+            "metadata": {
+                "description": "API-key provided by Svensk e-identitet (Only needed when Use Svensk e-identitet API (BankID/Freja eID) is true)"
+            },
             "defaultValue": "test"
         },
-        "Use Freja eID": {
+        "Svensk e-identitet BankID key": {
+            "type": "string",
+            "metadata": {
+                "description": "API-key provided by Svensk e-identitet (Only needed when Use Svensk e-identitet API is true)"
+            },
+            "defaultValue": "test"
+        },
+        "Svensk e-identitet Freja eID key": {
+            "type": "string",
+            "metadata": {
+                "description": "API-key provided by Svensk e-identitet (Only needed when Use Svensk e-identitet API (Freja eID) is true)"
+            },
+            "defaultValue": "test"
+        },
+        "Use Freja eID (Freja API)": {
             "type": "bool",
-            "defaultValue": "true"
+            "defaultValue": false
         },
         "Freja API Service Endpoint": {
             "type": "string",
-            "defaultValue": "https://services.test.frejaeid.com"
+            "defaultValue": "https://services.test.frejaeid.com",
+            "metadata": {
+                "description": "Service endpoint for Freja REST API (Only needed when Use Freja eID is true)"
+            }
         },
         "Freja API Resource Endpoint": {
             "type": "string",
-            "defaultValue": "https://resources.test.frejaeid.com"
+            "defaultValue": "https://resources.test.frejaeid.com",
+            "metadata": {
+                "description": "Resource endpoint for Freja REST API (Only needed when Use Freja eID is true)"
+            }
         },
         "Freja API service requesting certificate path": {
             "type": "string",
-            "defaultValue": "certs/freja_restapi_client_test.pfx"
+            "defaultValue": "certs/freja_restapi_client_test.pfx",
+            "metadata": {
+                "description": "Service requesting certificate for Freja REST API - needs to be changed for production use (Only needed when Use Freja eID is true)"
+            }
         },
         "Freja API service requesting certificate password": {
             "type": "string",
-            "defaultValue": "password"
+            "defaultValue": "test",
+            "metadata": {
+                "description": "Service requesting certificate password for Freja REST API - needs to be changed for production use (Only needed when Use Freja eID is true)"
+            }
         },
         "Freja minimum registration level": {
             "type": "string",
@@ -48,7 +106,10 @@
                 "EXTENDED",
                 "PLUS"
             ],
-            "defaultValue": "BASIC"
+            "defaultValue": "BASIC",
+            "metadata": {
+                "description": "The authentication level to use BASIC, EXTENDED or PLUS (Only needed when Use Freja eID OR Svensk E-identitet Freja is true)"
+            }
         }
     },
     "outputs": {
@@ -62,7 +123,7 @@
             "apiVersion": "2018-11-01",
             "name": "[parameters('name')]",
             "type": "Microsoft.Web/sites",
-            "location": "West Europe",
+            "location": "[resourceGroup().location]",
             "tags": {
             },
 
@@ -86,7 +147,7 @@
                     "type": "sourcecontrols",
                     "apiVersion": "2018-02-01",
                     "name": "web",
-                    "location": "West Europe",
+                    "location": "[resourceGroup().location]",
                     "properties": {
                         "repoUrl": "https://github.com/DennizSvens/teams-app-eid",
                         "branch": "master",
@@ -107,19 +168,27 @@
                         "displayName": "appsettings"
                     },
                     "properties": {
-                        "FUNKTIONSTJANSTER_ENABLE": "[toLower(string(parameters('Use CGI Funktionstjänster')))]",
+                        "FUNKTIONSTJANSTER_BANKID": "[toLower(string(parameters('Use CGI Funktionstjänster API for BankID')))]",
+                        "FUNKTIONSTJANSTER_FREJA": "[toLower(string(parameters('Use CGI Funktionstjänster API for Freja eID')))]",
                         "FUNKTIONSTJANSTER_ENDPOINT": "[parameters('CGI API Endpoint (wsdl)')]",
                         "FUNKTIONSTJANSTER_POLICY": "[parameters('CGI API Policy')]",
                         "FUNKTIONSTJANSTER_RP_DISPLAYNAME": "[parameters('CGI Displayname')]",
                         "FUNKTIONSTJANSTER_CACERT": "certs/bankid_steria.pem",
-                        "FREJA_RESTAPI_ENABLE": "[toLower(string(parameters('Use Freja eID')))]",
+                        "FREJA_RESTAPI_ENABLE": "[toLower(string(parameters('Use Freja eID (Freja API)')))]",
                         "FREJA_RESTAPI_CERT": "[parameters('Freja API service requesting certificate path')]",
                         "FREJA_RESTAPI_PASS": "[parameters('Freja API service requesting certificate password')]",
                         "FREJA_RESTAPI_CACERT": "certs/freja_restapi_webca_test.pem",
                         "FREJA_RESTAPI_SIGNING_CERT": "certs/freja_restapi_signing_test.pem",
                         "FREJA_RESTAPI_SERVICE_ENDPOINT": "[parameters('Freja API Service Endpoint')]",
                         "FREJA_RESTAPI_RESOURCE_ENDPOINT": "[parameters('Freja API Resource Endpoint')]",
-                        "FREJA_MINIMUM_REGISTRATION_LEVEL": "[parameters('Freja minimum registration level')]"
+                        "FREJA_MINIMUM_REGISTRATION_LEVEL": "[parameters('Freja minimum registration level')]",
+                        "SVENSKEIDENTITET_ENDPOINT": "https://client.grandid.com/",
+                        "SVENSKEIDENTITET_BANKID": "[toLower(string(parameters('Use Svensk e-identitet API for BankID')))]",
+                        "SVENSKEIDENTITET_FREJA": "[toLower(string(parameters('Use Svensk e-identitet API for Freja eID')))]",
+                        "SVENSKEIDENTITET_APIKEY": "[parameters('Svensk e-identitet API key')]",
+                        "SVENSKEIDENTITET_BANKIDKEY": "[parameters('Svensk e-identitet BankID key')]",
+                        "SVENSKEIDENTITET_FREJAEIDKEY": "[parameters('Svensk e-identitet Freja eID key')]",
+                        "LOGO_URL": "[parameters('Logo URL')]"
                     }
                 }
             ]
@@ -128,7 +197,7 @@
             "apiVersion": "2018-11-01",
             "name": "[concat(parameters('name'),'-AppServicePlan')]",
             "type": "Microsoft.Web/serverfarms",
-            "location": "West Europe",
+            "location": "[resourceGroup().location]",
             "kind": "linux",
             "tags": {
             },
