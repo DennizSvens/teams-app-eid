@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="sv">
+
+    <head>
+        <script src="/public/js/bootstrap.min.js"></script>
+        <script src="/public/js/jquery-3.4.1.min.js"></script>
+        <script src="/public/js/MicrosoftTeams.min.js"></script>
+
+        <link href="/public/css/bootstrap.min.css" rel="stylesheet">
+        <link href="/public/css/config.css" rel="stylesheet">
+ </head>
+
+    <body>
+        <p>Du kan enkelt lägga till Legitimering som en flik i ditt team.</p>
+        
+        <strong>Fliknamn</strong><label for="tabName" class="sr-only">Fliknamn</label>
+        <input type="text" value="{{tabName}}" id="tabName" class="form-control mb-2"/>
+        <script>
+            microsoftTeams.initialize();
+            microsoftTeams.settings.setValidityState(true);
+            
+            microsoftTeams.settings.registerOnSaveHandler((saveEvent) => {
+                microsoftTeams.settings.setSettings({
+                    contentUrl: "{{tabUrl}}",
+                    entityId: "{{tabId}}",
+                    suggestedDisplayName: $("#tabName")[0].value
+                });
+                saveEvent.notifySuccess();
+            });
+            
+            microsoftTeams.appInitialization.notifySuccess();
+        </script>
+    </body>
+
+</html>

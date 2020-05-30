@@ -1,3 +1,5 @@
+var socket;
+
 function initiateRequest(method) {
   var ssn = valfor.personalidnum($("#inputSSN").val(), valfor.NBR_DIGITS_12);
 
@@ -5,6 +7,7 @@ function initiateRequest(method) {
     Swal.fire({
       icon: "error",
       title: "Felaktigt personnummer",
+      heightAuto: false,
       html:
         "Du måste ange korrekt personnummer.<br/>Använd formatet ÅÅÅÅMMDDNNNN"
     });
@@ -13,6 +16,7 @@ function initiateRequest(method) {
     Swal.fire({
       imageUrl: "/public/ajax-loader.gif",
       title: "Skickar legitimeringsbegäran..",
+      heightAuto: false,
       showConfirmButton: false,
       showCancelButton: true,
       cancelButtonText: "Avbryt"
@@ -20,75 +24,209 @@ function initiateRequest(method) {
   }
 }
 
-var socket = io.connect();
+function initSockets() {
+    socket = io.connect();
 
-socket.on("authenticationStatus", data => {
-  console.log(data);
-  switch (data.STATUS) {
-    case "COMPLETED": {
-      Swal.close();
-      Swal.fire(
-        "Legitimerad!",
-        `<b>${data.DISPLAY_NAME}</b> har legitimerat sig!`,
-        "success"
-      );
-      break;
+    socket.on("tokenAuthentication", data => {
+        microsoftTeams.appInitialization.notifySuccess();
+        switch(data.STATUS) {
+            case "ELEVATION_NEEDED": {
+                    microsoftTeams.authentication.authenticate({
+                        url: window.location.origin + "/login?init=true",
+                        width: 600,
+                        height: 535,
+                        successCallback: function (result) {
+                            //Yay!
+                        },
+                        failureCallback: function (reason) {
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'Applikationen är blockerad.',
+                                html: 'Inloggningen mot Azure AD misslyckades.<br/> Kontakta IT-Helpdesk och uppge:<br/>'+reason,
+                                heightAuto: false,
+                                allowOutsideClick: false,
+                                showCancelButton: false,
+                                showConfirmButton: false,
+                            });
+                        }
+                    });
+                break;
+                }
+            case "COMMUNICATION_ERROR": 
+            case "SERVICE_ERROR": {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Applikationen är blockerad.',
+                    html: 'Inloggningen mot Azure AD misslyckades.<br/> Kontakta IT-Helpdesk och uppge:<br/>'+data.details,
+                    heightAuto: false,
+                    allowOutsideClick: false,
+                    showCancelButton: false,
+                    showConfirmButton: false,
+                });
+                break;
+            }
+            case "SUCCESS": {
+                break;
+            }
+        }     
+    });
+
+    socket.on("authenticationStatus", data => {
+        switch (data.STATUS) {
+            case "COMPLETED": {
+              Swal.close();
+              Swal.fire({
+                title: "Legitimerad!",
+                html: `<b>${data.DISPLAY_NAME}</b> har legitimerat sig!`,
+                icon: "success",
+                heightAuto: false
+              });
+              break;
+            }
+            case "INITIALIZED": {
+              Swal.update({
+                title: "Skickar legitimeringsbegäran.."
+              });
+              break;
+            }
+            case "PENDING_NO_USER": {
+              Swal.update({
+                title: "Be användaren starta appen.."
+              });
+              break;
+            }
+            case "PENDING_DELIVERED": {
+              Swal.update({
+                title: "Mottagaren har startat appen.."
+              });
+              break;
+            }
+            case "PENDING": {
+              Swal.update({
+                title: "Väntar på användaren.."
+              });
+              break;
+            }
+            case "USER_DECLINED": {
+              Swal.close();
+              Swal.fire({
+                html: "Personen nekade eller avbröt legitimeringen.",
+                title: "Försök igen!",
+                icon: "error",
+                heightAuto: false        
+              });
+              break;
+            }
+            case "EXPIRED": {
+              Swal.close();
+              Swal.fire({
+                html: "Legitimering misslyckades",
+                title: "Tiden för legitimering gick ut",
+                icon: "error",
+                heightAuto: false
+              });
+              break;
+            }
+            case "TIMEOUT": {
+              Swal.close();
+              Swal.fire({
+                html: "Legitimering misslyckades",
+                title: "Tiden för legitimering gick ut",
+                icon: "error",
+                heightAuto: false
+              });
+              break;
+            }
+            case "ERROR": {
+              Swal.close();
+              Swal.fire({
+                title: "Ett fel uppstod",
+                html: data.MESSAGE,
+                icon: "error",
+                heightAuto: false
+                });
+              break;
+            }
+        }
+    });
+}
+
+function setTheme(theme) {
+    if (theme) {
+        // Possible values for theme: 'default', 'light', 'dark' and 'contrast'
+        document.body.className =
+            'theme-' + (theme === 'default' ? 'light' : theme);
     }
-    case "INITIALIZED": {
-      Swal.update({
-        title: "Skickar legitimeringsbegäran.."
-      });
-      break;
+} 
+
+function blockingAuthError(error) {
+  Swal.fire({
+    icon: 'error',
+    title: 'Applikationen är blockerad.',
+    html: 'Inloggningen mot Azure AD misslyckades.<br/> Kontakta IT-Helpdesk och uppge:<br/>'+error,
+    allowOutsideClick: false,
+    heightAuto: false,
+    showCancelButton: false,
+    showConfirmButton: false
+  });
+}
+
+function initalizationUnblocker() {
+    Swal.close();
+    $("#EidAuthForm").show();
+}
+
+function initalizationBlocker() {
+  $("#EidAuthForm").hide();
+  Swal.fire({
+    icon: 'info',
+    title: 'Applikationen är blockerad.',
+    html: 'Applikationen kommer öppnas när<br/>initiering mot Teams är klar.',
+    allowOutsideClick: false,
+    showCancelButton: false,
+    showConfirmButton: false,
+    heightAuto: false,
+    timerProgressBar: true,
+    onBeforeOpen: () => {
+      Swal.showLoading();
+    }        
+  });
+}    
+
+var authTokenRequest = {
+    successCallback: function(result) {
+        initSockets();
+        socket.emit('registerToken', { token: result });
+    },
+    failureCallback: function(error) {
+        blockingAuthError(error);
+        microsoftTeams.appInitialization.notifySuccess();
+    },
+};
+
+function initializeApp(teamsMode) {
+    
+    if (teamsMode) {
+        initalizationBlocker();
+        microsoftTeams.initialize(() => {
+            initalizationUnblocker();
+        });
+
+        microsoftTeams.getContext(function (context) {
+            if (context && context.theme) {
+                setTheme(context.theme);
+            }
+        });
+
+        microsoftTeams.registerOnThemeChangeHandler(function (theme) {
+            setTheme(theme);
+        });
+
+        microsoftTeams.authentication.getAuthToken(authTokenRequest);    
+    } else {
+        initSockets();
     }
-    case "PENDING_NO_USER": {
-      Swal.update({
-        title: "Be användaren starta appen.."
-      });
-      break;
-    }
-    case "PENDING_DELIVERED": {
-      Swal.update({
-        title: "Mottagaren har startat appen.."
-      });
-      break;
-    }
-    case "PENDING": {
-      Swal.update({
-        title: "Väntar på användaren.."
-      });
-      break;
-    }
-    case "USER_DECLINED": {
-      Swal.close();
-      Swal.fire(
-        "Personen nekade eller avbröt legitimeringen.",
-        "Försök igen!",
-        "error"
-      );
-      break;
-    }
-    case "EXPIRED": {
-      Swal.close();
-      Swal.fire(
-        "Legitimering misslyckades",
-        "Tiden för legitimering gick ut",
-        "error"
-      );
-      break;
-    }
-    case "TIMEOUT": {
-      Swal.close();
-      Swal.fire(
-        "Legitimering misslyckades",
-        "Tiden för legitimering gick ut",
-        "error"
-      );
-      break;
-    }
-    case "ERROR": {
-      Swal.close();
-      Swal.fire("Ett fel uppstod", data.MESSAGE, "error");
-      break;
-    }
-  }
-});
+}
+
+
+

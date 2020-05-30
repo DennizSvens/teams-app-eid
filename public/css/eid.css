@@ -1,5 +1,4 @@
-html,
-body {
+html, body {
   height: 100%;
 }
 
@@ -17,24 +16,38 @@ body {
   padding-bottom: 40px;
   background-color: #252424;
 }
-h1 {
+
+body.theme-light {
+  background-color: #F3F2F1;
+}
+
+body.theme-dark {
+  background-color: #252424;
+}
+
+body.swal2-shown > [aria-hidden="true"] {
+  filter: blur(10px);
+}
+body > * {
+    transition: 0.15s filter linear;
+}
+
+
+body.theme-dark h1 {
   color: #fff;
 }
-body {
+
+body.theme-light h1 {
+  color: #000;
 }
-.logo {
-  content: url("/public/logo-white.png");
+
+body.theme-light .logo {
+  content:url("/public/logo-black.png");
 }
-/*@media (prefers-color-scheme: light) {
-  .logo {
-    background: url("/public/logo-black.png") no-repeat center center fixed;
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
-    background-size: cover;
-    height: 72px;
-  }
-}*/
+
+body.theme-dark .logo {
+  content:url("/public/logo-white.png");
+}
 
 .form-eidauth {
   width: 100%;
@@ -42,9 +55,11 @@ body {
   padding: 15px;
   margin: 0 auto;
 }
+
 .form-eidauth .checkbox {
   font-weight: 400;
 }
+
 .form-eidauth .form-control {
   position: relative;
   box-sizing: border-box;
@@ -52,9 +67,11 @@ body {
   padding: 10px;
   font-size: 16px;
 }
+
 .form-eidauth .form-control:focus {
   z-index: 2;
 }
+
 a {
   word-break: break-all;
 }
