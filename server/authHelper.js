@@ -57,6 +57,7 @@ function getTokensFromUserToken(userToken, socket) {
                 socket.handshake.session.access_token = responseObject.access_token;
                 socket.handshake.session.refresh_token = responseObject.refresh_token;
                 socket.handshake.session.isAuthenticated = true;
+                socket.handshake.session.save();
                 socket.emit("tokenAuthentication", { STATUS: 'SUCCESS'});
             }
         });

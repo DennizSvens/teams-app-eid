@@ -2,6 +2,7 @@ const express = require("express");
 const hbs = require("hbs");
 const dotenv = require("dotenv");
 const authHelper = require('./authHelper.js');
+const graphHelper = require('./graphHelper.js');
 const fs = require("fs");
 const { v4 } = require("uuid");
 const modules = [];
@@ -86,20 +87,27 @@ if (strbool(process.env.FREJA_RESTAPI_ENABLE)) {
 }
 
 //Preppare our session storage
-var session = require('express-session')({
-  secret: process.env.COOKIE_SECRET,
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: strbool(process.env.USE_SSL) },
-  name: 'eidapp'
+var io_session = require("express-socket.io-session");
+var e_session = require("express-session");
+var connectLoki = require('connect-loki')(e_session);
+
+var ee_session = e_session({
+    store: new connectLoki({ path: './server/data/sessions.db',logErrors: true }),
+    secret: process.env.COOKIE_SECRET,
+    resave: true,
+    saveUninitialized: true,
+    cookie: { secure: strbool(process.env.USE_SSL) },
+    name: 'eidapp'
 });
+
+
 const sharedsession = require("express-socket.io-session");
 
 // Setup express
 var app = express();
 app.set('trust proxy', 1) // trust first proxy
 app.set("viewengine", "hbs");
-app.use(session);
+app.use(ee_session);
 
 app.use("/public/", express.static(__dirname + "/../public"));
 hbs.registerPartials(__dirname + "/../views/partials");
@@ -149,6 +157,7 @@ app.use(function (req, res, next) {
     req.session.refreshToken = "";
     req.session.stopFlag = false;
     req.session.isAuthenticated = false;
+    req.session.save();
   }
   next();
 })
@@ -162,20 +171,56 @@ app.get("/", (req, res) => {
 });
 
 if (strbool(process.env.TEAMS_INTEGRATED)) {
-    app.get("/config", (req, res) => {
-      res.render("config.hbs", {
-          tabUrl: process.env.BASE_URL,
-          tabName: process.env.TEAMS_TEAM_TABNAME,
-          tabId: req.query.team+'-'+req.query.channel+'-eidtab'
-      });
+    
+    app.get("/calendar", (req, res) => {
+        if (!req.session.isAuthenticated) {
+            res.status(403)
+            res.send();
+            return;
+        }
+        res.render("calendar.hbs", {
+            pageTitle: "Säkra möten"
+        });
     });
+
+    app.get("/calendar/events", (req, res) => {
+        if (!req.session.isAuthenticated) {
+            res.status(403)
+            res.send();
+            return;
+        }
+        graphHelper.calendarView(req.session.access_token, req.query.start, req.query.end).then(function(result) {
+            res.status(200);
+            res.send(result);
+        });
+    });
+
+    app.get("/config", (req, res) => {
+        if (!req.session.isAuthenticated) {
+            res.status(403)
+            res.send();
+            return;
+        }
+        res.render("config.hbs", {
+            tabUrl: process.env.BASE_URL,
+            tabName: process.env.TEAMS_TEAM_TABNAME,
+            tabId: req.query.team+'-'+req.query.channel+'-eidtab'
+        });
+    });
+    
     app.get('/logout', function (req, res) {
+        if (!req.session.isAuthenticated) {
+            res.status(403)
+            res.send();
+            return;
+        }
         req.session.accessToken = "";
         req.session.refreshToken = "";
         req.session.isAuthenticated=false;
         res.status(200);
         res.redirect('/');
-    });    
+    });   
+    
     app.get('/login', (req, res) => {
         if (req.query.code !== undefined) {
             authHelper.getTokenFromCode(req.query.code, function (e, accessToken, refreshToken) {
@@ -201,7 +246,7 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
 }
 
         
-io.use(sharedsession(session, {
+io.use(io_session(ee_session, {
     autoSave:true
 })); 
 //SocketIO incomming

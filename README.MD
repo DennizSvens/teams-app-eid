@@ -107,7 +107,8 @@ Använd Teams App Studio för att skapa ett app-paket. Du hittar Teams App Studi
 2. Fyll i övriga krävda uppgifter
 3. Under App details i sektionen Advanced se till att rutan Loading indicator är ikryssad
 4. Under Tabs Skapa en teamstab för team och gruppchattar med https://dinserver.se:3000/config
-5. Under Tabs skapa en personlig tab med adress https://dinserver.se:3000/, ange inte website URL
+5. Under Tabs skapa en personlig tab med namn 'Legitimering' och adress https://dinserver.se:3000/, ange inte website URL
+5. Under Tabs skapa en personlig tab med namn 'Kalender' och adress https://dinserver.se:3000/calendar, ange inte website URL
 6. Under Domains and Permissions ange AAD appID som du fick när du skapade AAD-appen
 7. Under Domains and Permissions ange Single-Sign-On url till URI för program-ID från AAD-appen
 8. Deploy!

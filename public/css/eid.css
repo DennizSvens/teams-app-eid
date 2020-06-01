@@ -14,7 +14,6 @@ body {
   justify-content: center;
   padding-top: 40px;
   padding-bottom: 40px;
-  background-color: #252424;
 }
 
 body.theme-light {
@@ -22,7 +21,7 @@ body.theme-light {
 }
 
 body.theme-dark {
-  background-color: #252424;
+  background-color: #2d2c2c;
 }
 
 body.swal2-shown > [aria-hidden="true"] {

@@ -1,4 +1,6 @@
 var socket;
+var teamsContext;
+var initTimeout;
 
 function initiateRequest(method) {
   var ssn = valfor.personalidnum($("#inputSSN").val(), valfor.NBR_DIGITS_12);
@@ -154,8 +156,15 @@ function initSockets() {
 function setTheme(theme) {
     if (theme) {
         // Possible values for theme: 'default', 'light', 'dark' and 'contrast'
-        document.body.className =
-            'theme-' + (theme === 'default' ? 'light' : theme);
+        document.body.className = 'theme-' + (theme === 'default' ? 'light' : theme);
+        
+        if (theme === 'default' || theme === 'light' ) {
+            $('#appTheme').attr('href', '/public/css/themes/pulse/bootstrap.min.css');
+        } else if ( theme === 'contrast' ) {
+            $('#appTheme').attr('href', '/public/css/themes/darkly/bootstrap.min.css');
+        } else {
+            $('#appTheme').attr('href', '/public/css/themes/darkly/bootstrap.min.css');
+        }
     }
 } 
 
@@ -171,26 +180,25 @@ function blockingAuthError(error) {
   });
 }
 
-function initalizationUnblocker() {
+function initalizationUnblocker(callback) {
+    window.clearTimeout(initTimeout);
     Swal.close();
-    $("#EidAuthForm").show();
 }
 
 function initalizationBlocker() {
-  $("#EidAuthForm").hide();
-  Swal.fire({
-    icon: 'info',
-    title: 'Applikationen är blockerad.',
-    html: 'Applikationen kommer öppnas när<br/>initiering mot Teams är klar.',
-    allowOutsideClick: false,
-    showCancelButton: false,
-    showConfirmButton: false,
-    heightAuto: false,
-    timerProgressBar: true,
-    onBeforeOpen: () => {
-      Swal.showLoading();
-    }        
-  });
+    Swal.fire({
+        icon: 'info',
+        title: 'Applikationen är blockerad.',
+        html: 'Applikationen kommer öppnas när<br/>initiering mot Teams är klar.',
+        allowOutsideClick: false,
+        showCancelButton: false,
+        showConfirmButton: false,
+        heightAuto: false,
+        timerProgressBar: true,
+        onBeforeOpen: () => {
+            Swal.showLoading();
+        }        
+    });
 }    
 
 var authTokenRequest = {
@@ -204,16 +212,20 @@ var authTokenRequest = {
     },
 };
 
-function initializeApp(teamsMode) {
+function initializeApp(teamsMode,blockCallback,unblockCallback) {
     
+    initTimeout = setTimeout(initalizationBlocker,5000);
+    blockCallback();
+
     if (teamsMode) {
-        initalizationBlocker();
         microsoftTeams.initialize(() => {
             initalizationUnblocker();
+            unblockCallback();
         });
 
         microsoftTeams.getContext(function (context) {
             if (context && context.theme) {
+                teamsContext = context;
                 setTheme(context.theme);
             }
         });

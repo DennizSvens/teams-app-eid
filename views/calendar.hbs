@@ -1,0 +1,119 @@
+{{> head}}
+
+    <script src="/public/js/MicrosoftTeams.min.js"></script>
+    <link href="/public/css/config.css" rel="stylesheet">
+    <script src="/public/js/eid.js"></script>
+        
+    <link href='/public/fullcalendar/core/main.css' rel='stylesheet' />
+    <link href='/public/fullcalendar/daygrid/main.css' rel='stylesheet' />
+    <link href='/public/fullcalendar/timegrid/main.css' rel='stylesheet' />
+
+    <script src='/public/fullcalendar/core/main.js'></script>
+    <script src='/public/fullcalendar/core/locales/sv.js'></script>
+    <script src='/public/fullcalendar/daygrid/main.js'></script>
+    <script src='/public/fullcalendar/timegrid/main.js'></script>
+    <script src='/public/fullcalendar/bootstrap/main.js'></script>
+    
+    <style>
+        #calendar {
+            margin: 60px 100px auto;
+            background-color: cfcfcf;
+        }   
+        body.swal2-shown > [aria-hidden="true"] {
+          filter: blur(10px);
+        }        
+    </style>
+
+    <script>
+
+            $(function() {
+
+                function getEvents(infoObject, successCallback, failureCallback) {
+                
+                    $.get( "/calendar/events", { start: infoObject.startStr, end: infoObject.endStr } )
+                        .done(function( data ) {
+                            successCallback(data);
+                        })
+                        .fail(function(error) {
+                            failureCallback(error);
+                        });
+                }
+
+                function beforeInit() {
+                }
+                
+                function afterInit() {
+                    var calendarEl = document.getElementById('calendar');
+                    var calendar = new FullCalendar.Calendar(calendarEl, {
+                        plugins: [ 'dayGrid', 'timeGrid', 'bootstrap' ],
+                        themeSystem: 'bootstrap',
+                        locale: 'sv',
+                        defaultView: 'timeGridWeek',
+                        weekNumbers: true,
+                        scrollTime: '08:00:00',
+                        weekNumbersWithinDays: false,
+                        businessHours: {
+                            daysOfWeek: [1, 2, 3, 4, 5],
+                            startTime: '08:00',
+                            endTime: '17:00'
+                        },
+                        nowIndicator: true,
+                        aspectRatio: 2.2,
+                        events: getEvents,
+                        header: {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'timeGridWeek,dayGridMonth,timeGridDay'
+                        },
+                        eventClick: function(info) {
+                                // info.event.id
+                            if (info.event.extendedProps.isOnlineMeeting) {
+                              Swal.fire({
+                                icon: 'error',
+                                title: "Är redan onlinemöte",
+                                html: "Du kan inte skapa en säker mötesinbjudan<br/>till ett befintligt onlinemöte i dagsläget.",
+                                allowOutsideClick: false,
+                                heightAuto: false,
+                                showCancelButton: false,
+                                showConfirmButton: true
+                              });
+                            } else {
+                              Swal.fire({
+                                icon: 'info',
+                                title: info.event.title,
+                                html: "Detta är spännande, det här mötet har potential.<br/>Nästa version kanske? =)",
+                                allowOutsideClick: false,
+                                heightAuto: false,
+                                showCancelButton: false,
+                                showConfirmButton: true
+                              });
+                            }
+                                
+                        },                        
+                        bootstrapFontAwesome: {
+                            close: 'fa-times',
+                            prev: 'fa-chevron-left',
+                            next: 'fa-chevron-right',
+                            prevYear: 'fa-angle-double-left',
+                            nextYear: 'fa-angle-double-right'
+                        }
+                    });
+
+                    calendar.render();
+                    calendar.scrollToTime('08:00:00');
+                }
+                    
+                initializeApp(true,beforeInit,afterInit);
+
+            });
+        
+    </script>
+  </head>
+  <body>
+
+    <div id='calendar'></div>
+
+  </body>
+
+{{> footer}}
+
