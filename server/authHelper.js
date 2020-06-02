@@ -6,7 +6,7 @@ var credentials = {
   authority: 'https://login.microsoftonline.com/common',
   authorize_endpoint: '/oauth2/v2.0/authorize',
   token_endpoint: '/oauth2/v2.0/token',
-  scope: 'email offline_access openid profile User.Read User.Read.All BookingsAppointment.ReadWrite.All Calendars.ReadWrite Calendars.ReadWrite.Shared OnlineMeetings.ReadWrite Mail.Send Mail.Send.Shared'
+  scope: 'email offline_access openid profile User.Read User.Read.All BookingsAppointment.ReadWrite.All Calendars.ReadWrite Calendars.ReadWrite.Shared OnlineMeetings.ReadWrite Mail.Send Mail.Send.Shared Mail.ReadWrite Mail.ReadWrite.Shared'
 };
 
 module.exports = {
@@ -32,7 +32,7 @@ module.exports = {
                 client_secret: process.env.AADAPP_CLIENT_SECRET,
                 resource: 'https://graph.microsoft.com',
                 requested_token_use: 'on_behalf_of',
-                scope: 'email offline_access openid profile User.Read User.Read.All BookingsAppointment.ReadWrite.All Calendars.ReadWrite Calendars.ReadWrite.Shared OnlineMeetings.ReadWrite Mail.Send Mail.Send.Shared'
+                scope: 'email offline_access openid profile User.Read User.Read.All BookingsAppointment.ReadWrite.All Calendars.ReadWrite Calendars.ReadWrite.Shared OnlineMeetings.ReadWrite Mail.Send Mail.Send.Shared Mail.ReadWrite Mail.ReadWrite.Shared'
                 }
         };
 

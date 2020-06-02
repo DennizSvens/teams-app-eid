@@ -32,6 +32,12 @@ function createMeetingFile(meetingData) {
     fs.writeFileSync("./server/data/meetings/"+meetingData.id+".json", content, 'utf8');
 }
 
+function getMeetingFile(meetingId) {
+    var content = fs.readFileSync("./server/data/meetings/"+meetingId+".json", 'utf8');
+    return JSON.parse(content);        
+}
+
+
 function cancelMeetingFile(meetingId) {
     var content = JSON.stringify({id:meetingId,isCancelled: true});
     fs.writeFileSync("./server/data/meetings/"+meetingId+".json", content, 'utf8');
@@ -45,7 +51,7 @@ function tokenTemplate(template,tokenObject) {
     return content;
 }
 
-async function sendTemplateMessage(accessToken, toName, toEmail, subject, body, template, tokenObject) {
+async function sendTemplateMessage(accessToken, toName, toEmail, subject, template, tokenObject) {
     var content = fs.readFileSync("./server/templates/"+template+".txt", 'utf8');
     
     for(var tokenKey in tokenObject) {
@@ -69,8 +75,7 @@ module.exports = {
     
     getMeetingFile: function getMeetingFile(meetingId) {
         try {
-            var content = fs.readFileSync("./server/data/meetings/"+meetingId+".json", 'utf8');
-            return JSON.parse(content);        
+            return getMeetingFile(meetingId);    
         } catch (error) {
             return {
                 id: meetingId,
@@ -92,7 +97,7 @@ module.exports = {
                 subject: meetingData.meeting.subject
             });            
             
-            return messageSender;
+            return {};
         } catch (error) {
             return error;
         }
