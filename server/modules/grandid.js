@@ -34,15 +34,15 @@ function CheckAuthResponseFreja(url,suffix) {
   });
 }
 
-const InitAuthenticationSEIDBankID = (ssn, socket) => {
-    return InitAuthentication(ssn, process.env.SVENSKEIDENTITET_APIKEY, process.env.SVENSKEIDENTITET_BANKIDKEY, socket);
+const InitAuthenticationSEIDBankID = (ssn, socket, callback=undefined) => {
+    return InitAuthentication(ssn, process.env.SVENSKEIDENTITET_APIKEY, process.env.SVENSKEIDENTITET_BANKIDKEY, socket, callback);
 }
 
-const InitAuthenticationSEIDFrejaEID = (ssn, socket) => {
-    return InitAuthentication(ssn, process.env.SVENSKEIDENTITET_APIKEY, process.env.SVENSKEIDENTITET_FREJAEIDKEY, socket);
+const InitAuthenticationSEIDFrejaEID = (ssn, socket, callback=undefined) => {
+    return InitAuthentication(ssn, process.env.SVENSKEIDENTITET_APIKEY, process.env.SVENSKEIDENTITET_FREJAEIDKEY, socket, callback);
 }
 
-function InitAuthentication(ssn, apikey, servicekey, socket) {
+function InitAuthentication(ssn, apikey, servicekey, socket, callback) {
 
   var requestObject = {
     callbackUrl: "https://localhost/",
@@ -171,7 +171,8 @@ function InitAuthentication(ssn, apikey, servicekey, socket) {
                                              
                           socket.emit("authenticationStatus", {
                             STATUS: "COMPLETED",
-                            DISPLAY_NAME: parsedResponse.userAttributes.requestedAttributes.basicUserInfo.name + ' ' + parsedResponse.userAttributes.requestedAttributes.basicUserInfo.surname
+                            DISPLAY_NAME: parsedResponse.userAttributes.requestedAttributes.basicUserInfo.name + ' ' + parsedResponse.userAttributes.requestedAttributes.basicUserInfo.surname,
+                            DECORATIONS: !callback ? "" : callback()
                           });
                           i = 61;
                           break;
@@ -261,12 +262,14 @@ function InitAuthentication(ssn, apikey, servicekey, socket) {
                   if (parsedResponse.requestedAttributes) {
                       socket.emit("authenticationStatus", {
                         STATUS: "COMPLETED",
-                        DISPLAY_NAME: parsedResponse.requestedAttributes.basicUserInfo.name + " " + parsedResponse.requestedAttributes.basicUserInfo.surname
+                        DISPLAY_NAME: parsedResponse.requestedAttributes.basicUserInfo.name + " " + parsedResponse.requestedAttributes.basicUserInfo.surname,
+                        DECORATIONS: !callback ? "" : callback()
                       });
                   } else {                    
                       socket.emit("authenticationStatus", {
                         STATUS: "COMPLETED",
-                        DISPLAY_NAME: parsedResponse.userAttributes.name
+                        DISPLAY_NAME: parsedResponse.userAttributes.name,
+                        DECORATIONS: !callback ? "" : callback()
                       });
                   }
                   i = 61;                

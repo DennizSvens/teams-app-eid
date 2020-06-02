@@ -14,7 +14,7 @@ function initiateRequest(method) {
         "Du måste ange korrekt personnummer.<br/>Använd formatet ÅÅÅÅMMDDNNNN"
     });
   } else {
-    socket.emit(method, { ssn: $("#inputSSN")[0].value });
+    socket.emit(method, { ssn: $("#inputSSN").val() });
     Swal.fire({
       imageUrl: "/public/ajax-loader.gif",
       title: "Skickar legitimeringsbegäran..",
@@ -29,6 +29,20 @@ function initiateRequest(method) {
 function initSockets() {
     socket = io.connect();
 
+    socket.on("meetingCreated", data => {
+        calendar.refetchEvents();
+        Swal.fire({
+            title: "Mötet skapat!",
+            html: `Startar <b>${data.START}</b> <br/>med <b>${data.NAME}</b>`,
+            icon: "success",
+            heightAuto: false
+        });                
+    });
+    
+    socket.on("calendarUpdate", data => {
+        calendar.refetchEvents();
+    });    
+    
     socket.on("tokenAuthentication", data => {
         microsoftTeams.appInitialization.notifySuccess();
         switch(data.STATUS) {
@@ -214,10 +228,11 @@ var authTokenRequest = {
 
 function initializeApp(teamsMode,blockCallback,unblockCallback) {
     
-    initTimeout = setTimeout(initalizationBlocker,5000);
-    blockCallback();
 
     if (teamsMode) {
+        initTimeout = setTimeout(initalizationBlocker,5000);
+        blockCallback();
+
         microsoftTeams.initialize(() => {
             initalizationUnblocker();
             unblockCallback();

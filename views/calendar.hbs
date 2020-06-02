@@ -12,6 +12,7 @@
     <script src='/public/fullcalendar/core/locales/sv.js'></script>
     <script src='/public/fullcalendar/daygrid/main.js'></script>
     <script src='/public/fullcalendar/timegrid/main.js'></script>
+    <script src='/public/fullcalendar/interaction/main.js'></script>
     <script src='/public/fullcalendar/bootstrap/main.js'></script>
     
     <style>
@@ -42,14 +43,143 @@
                 function beforeInit() {
                 }
                 
+                function fpad(n){
+                  if(n <= 9){
+                    return "0" + n;
+                  }
+                  return n
+                }                
+                
                 function afterInit() {
                     var calendarEl = document.getElementById('calendar');
-                    var calendar = new FullCalendar.Calendar(calendarEl, {
-                        plugins: [ 'dayGrid', 'timeGrid', 'bootstrap' ],
+                    calendar = new FullCalendar.Calendar(calendarEl, {
+                        plugins: [ 'dayGrid', 'timeGrid', 'bootstrap', 'interaction' ],
                         themeSystem: 'bootstrap',
                         locale: 'sv',
                         defaultView: 'timeGridWeek',
                         weekNumbers: true,
+                        selectable: true,
+                        timezone: 'UTC',
+                        select: function(info) {
+                            if (!info.allDay) {
+                            
+                                var dateString = info.start.getFullYear() + "-" + fpad(info.start.getMonth()) + "-" + fpad(info.start.getDay());
+                                if (info.start.getDay() == info.end.getDay()) {
+                                    dateString = dateString + "<br/> klockan " + fpad(info.start.getHours()) +":" + fpad(info.start.getMinutes()) + " till ";
+                                } else {
+                                    dateString = " från <br/>" + dateString + " " + fpad(info.start.getHours()) +":" + fpad(info.start.getMinutes());
+                                    dateString = dateString + " till " + info.end.getFullYear() + "-" + fpad(info.end.getMonth()) + "-" + fpad(info.end.getDay()) + " ";
+                                }
+                                dateString = dateString + fpad(info.end.getHours()) +":" + fpad(info.end.getMinutes());
+                            
+                                Swal.fire({
+                                    icon: 'question',
+                                    title: "Boka säkert möte?",
+                                    html: "Vill du boka ett möte " + dateString + "?",
+                                    allowOutsideClick: false,
+                                    heightAuto: false,
+                                    showCancelButton: true,
+                                    showConfirmButton: true
+                                }).then((result) => {
+                                    
+                                    if (result.value) {
+                                    
+                                        Swal.mixin({
+                                          input: 'text',
+                                          confirmButtonText: 'Nästa &rarr;',
+                                          showCancelButton: true,
+                                          progressSteps: ['1','2', '3', '4']
+                                        }).queue([
+                                          {
+                                            title: 'Skapa säkert möte',
+                                            text: 'Ange en ärendemening för mötet:',
+                                            inputValidator: (value) => {
+                                                return new Promise((resolve) => {
+                                                      var subject = valfor.text(value, 'LETTEREXT', valfor.DEFAULT, 2, 200);
+                                                      if (subject) {
+                                                        resolve()
+                                                      } else {
+                                                        resolve('Ange en en ärendemening')
+                                                      }
+                                                });
+                                            }
+                                          },
+                                          {
+                                            title: 'Skapa säkert möte',
+                                            text: 'Ange person- eller sammordningsnummer:',
+                                            inputValidator: (value) => {
+                                                return new Promise((resolve) => {
+                                                      var ssn = valfor.personalidnum(value, valfor.NBR_DIGITS_12);
+                                                      if (ssn) {
+                                                        resolve()
+                                                      } else {
+                                                        resolve('Ange ett korrekt personnummer (ÅÅÅÅMMDDNNNN)')
+                                                      }
+                                                });
+                                            }
+                                          },
+                                          {
+                                            title: 'Skapa säkert möte',
+                                            text: 'Ange för- och efternamn:',
+                                            inputValidator: (value) => {
+                                                return new Promise((resolve) => {
+                                                      var namn = valfor.text(value, 'LETTEREXT', valfor.DEFAULT, 4, 200);
+                                                      if (namn) {
+                                                        resolve()
+                                                      } else {
+                                                        resolve('Ange för och efternamn')
+                                                      }
+                                                });
+                                            }
+                                          },
+                                          {
+                                            title: 'Skapa säkert möte',
+                                            text: 'Ange e-postadress:',
+                                            inputValidator: (value) => {
+                                                return new Promise((resolve) => {
+                                                      var email = valfor.email(value, valfor.LOWERCASE);
+                                                      if (email) {
+                                                        resolve()
+                                                      } else {
+                                                        resolve('Ange en korrekt e-postadress.')
+                                                      }
+                                                });
+                                            }
+                                          }
+                                        ]).then((result) => {
+                                              if (result.value) {
+                                                const answers = {
+                                                    subject: result.value[0],
+                                                    ssn: valfor.personalidnum(result.value[1], valfor.NBR_DIGITS_12),
+                                                    name: result.value[2],
+                                                    email: valfor.email(result.value[3], valfor.LOWERCASE),
+                                                    start: info.startStr,
+                                                    end: info.endStr
+                                                };                                                
+                                                socket.emit("createSecureMeeting", answers);
+                                                Swal.fire({
+                                                    icon: 'info',
+                                                    title: 'Skapar möte...',
+                                                    html: 'Ditt möte håller på att skapas..',
+                                                    heightAuto: false,
+                                                    allowOutsideClick: false,
+                                                    showCancelButton: false,
+                                                    showConfirmButton: false,
+                                                    timerProgressBar: true,
+                                                    onBeforeOpen: () => {
+                                                        Swal.showLoading();
+                                                    }                                                     
+                                                });                                                
+                                                
+                                              }
+                                        });
+                                    
+                                    
+                                    }
+                                
+                                });                    
+                            }
+                        },
                         scrollTime: '08:00:00',
                         weekNumbersWithinDays: false,
                         businessHours: {
@@ -67,11 +197,11 @@
                         },
                         eventClick: function(info) {
                                 // info.event.id
-                            if (info.event.extendedProps.isOnlineMeeting) {
+                            if (!info.event.extendedProps.eid_data.eid) {
                               Swal.fire({
-                                icon: 'error',
-                                title: "Är redan onlinemöte",
-                                html: "Du kan inte skapa en säker mötesinbjudan<br/>till ett befintligt onlinemöte i dagsläget.",
+                                icon: 'info',
+                                title: "Detta är inte ett säkert möte",
+                                html: "Detta är ett vanligt möte som du sköter om i Outlook.<br/>Snart går det dock att uppgradera...",
                                 allowOutsideClick: false,
                                 heightAuto: false,
                                 showCancelButton: false,
@@ -79,13 +209,18 @@
                               });
                             } else {
                               Swal.fire({
-                                icon: 'info',
+                                icon: 'warning',
                                 title: info.event.title,
-                                html: "Detta är spännande, det här mötet har potential.<br/>Nästa version kanske? =)",
+                                html: "<b>Namn:</b> "+ info.event.extendedProps.eid_data.name + "<br/><b>Personnummer:</b> "+ info.event.extendedProps.eid_data.ssn + "<br/><b>E-post:</b> "+ info.event.extendedProps.eid_data.email,
                                 allowOutsideClick: false,
                                 heightAuto: false,
-                                showCancelButton: false,
+                                showCancelButton: true,
+                                cancelButtonText: "Avboka möte",
                                 showConfirmButton: true
+                              }).then((result) => {
+                                if (!result.value) {
+                                    socket.emit("deleteSecureMeeting", {id: info.event.extendedProps.eid_data.eidid});
+                                }
                               });
                             }
                                 
@@ -106,6 +241,8 @@
                 initializeApp(true,beforeInit,afterInit);
 
             });
+        
+        var calendar;
         
     </script>
   </head>

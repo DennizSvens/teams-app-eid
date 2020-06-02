@@ -3,6 +3,7 @@ const hbs = require("hbs");
 const dotenv = require("dotenv");
 const authHelper = require('./authHelper.js');
 const graphHelper = require('./graphHelper.js');
+const appHelper = require('./appHelper.js');
 const fs = require("fs");
 const { v4 } = require("uuid");
 const modules = [];
@@ -150,7 +151,6 @@ if (strbool(process.env.USE_SSL)) {
 const io = require("socket.io")(server);
 
 //http-handers
-
 app.use(function (req, res, next) {
   if (!req.session.isAuthenticated) {
     req.session.accessToken = "";
@@ -162,16 +162,54 @@ app.use(function (req, res, next) {
   next();
 })
 
-app.get("/", (req, res) => {
-  res.render("start.hbs", {
-    pageTitle: "Legitimera medborgare",
-    modules: modules,
-    teamsMode: strbool(process.env.TEAMS_INTEGRATED)
-  });
-});
 
 if (strbool(process.env.TEAMS_INTEGRATED)) {
     
+    app.get("/", (req, res) => {
+      res.render("blank.hbs", {
+        pageTitle: "Mötesportalen"
+      });
+    });
+
+    app.get("/meet", (req, res) => {
+        var query = req._parsedUrl.query;
+        if (appHelper.validateUUID(query)) {            
+            var file = appHelper.getMeetingFile(query);
+            
+            if (file.isCancelled) {
+                res.render("nomeet.hbs", {
+                    pageTitle: "Mötesportalen",
+                    title: "Mötet inställt",
+                    message: "Mötet har ställts in. Kontakta den du bokade mötet med för mer information.",
+                    meetingId: query
+                });
+            } else {
+                               
+                res.render("meet.hbs", {
+                    pageTitle: "Mötesportalen",
+                    modules: modules,
+                    starttime: appHelper.formatStringTime(file.data.start),
+                    endtime: appHelper.formatStringTime(file.data.end),
+                    subject: file.meeting.subject,
+                    sender: file.sender.name,
+                    recipient: file.recipient.name,                
+                    meetingId: query
+                });
+            }
+        } else {
+            res.status(404)
+            res.send();
+        }
+    });
+    
+    app.get("/identify", (req, res) => {
+      res.render("identify.hbs", {
+        pageTitle: "Legitimera medborgare",
+        modules: modules,
+        teamsMode: true
+      });
+    });
+
     app.get("/calendar", (req, res) => {
         if (!req.session.isAuthenticated) {
             res.status(403)
@@ -243,6 +281,16 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
             res.send();      
         }
     });
+} else {
+
+    app.get("/", (req, res) => {
+      res.render("identify.hbs", {
+        pageTitle: "Legitimera medborgare",
+        modules: modules,
+        teamsMode: false
+      });
+    });
+    
 }
 
         
@@ -251,18 +299,50 @@ io.use(io_session(ee_session, {
 })); 
 //SocketIO incomming
 io.on("connection", function(socket) {
+
   modules.forEach(module => {
     socket.on(module.functionName, function(data) {
-      if (!strbool(process.env.TEAMS_INTEGRATED) || socket.handshake.session.isAuthenticated) {
-        module.module[module.exportedFunctionName](data.ssn, socket);
-      }
+        if (socket.handshake.session.isAuthenticated || !strbool(process.env.TEAMS_INTEGRATED)) {
+            module.module[module.exportedFunctionName](data.ssn, socket);
+        }
     });
   });
 
   if (strbool(process.env.TEAMS_INTEGRATED)) {   
+
+      modules.forEach(module => {
+        socket.on("p"+module.functionName, function(data) {
+          
+          var file = appHelper.getMeetingFile(data.meeting);
+
+          if (!file.isCancelled) {
+              module.module[module.exportedFunctionName](file.recipient.ssn, socket, function(){
+                  return file.meeting.link;
+              });
+          }
+        });
+      });
+
       socket.on('registerToken', function(data) {   
         authHelper.getTokensFromUserToken(data.token, socket);
       });
+      
+      socket.on('createSecureMeeting', function(data) { 
+        if (socket.handshake.session.isAuthenticated) {
+            appHelper.createSecureMeeting(socket.handshake.session.access_token,data.start,data.end, data.ssn, data.name, data.email, data.subject).then(function(result){
+                socket.emit("meetingCreated", { NAME: data.name, START: appHelper.formatStringTime(data.start)});
+            });
+        }
+      });
+      
+      socket.on('deleteSecureMeeting', function(data) {         
+        if (socket.handshake.session.isAuthenticated) {
+            appHelper.deleteSecureMeeting(socket.handshake.session.access_token,data.id).then(function(result){
+                socket.emit("calendarUpdate", {});
+            });
+        }
+      });
+      
   }
 });
 

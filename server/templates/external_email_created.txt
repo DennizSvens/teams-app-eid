@@ -1,0 +1,13 @@
+<h2>Anslut till ett s&auml;kert Teamsm&ouml;te</h2>
+<p>Detta &auml;r en inbjudan till m&ouml;te som kr&auml;ver att du legitimerar dig innan du kan ansluta. Legitimering sker med hj&auml;lp av e-legitimationen p&aring; din telefon.</p>
+<table border="1" cellpadding="5">
+<tbody>
+<tr>
+<td>
+<p><strong>$subject$</strong> med <strong>$name$</strong><br />mellan $starttime$ och $endtime$.</p>
+<p><a href="$link$">Klicka p&aring; denna l&auml;nk f&ouml;r att ansluta till m&ouml;tet</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><em>V&auml;nligen</em><br /><em>Botkyrka Kommun</em></p>

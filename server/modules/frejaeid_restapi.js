@@ -35,7 +35,7 @@ function CheckFrejaAuthResponse(transactionId) {
   });
 }
 
-const InitAuthenticationFrejaAPI = (ssn, socket) => {
+const InitAuthenticationFrejaAPI = (ssn, socket, callback=undefined) => {
   var userInfo = {
     country: "SE",
     ssn: ssn
@@ -137,7 +137,8 @@ const InitAuthenticationFrejaAPI = (ssn, socket) => {
             case "APPROVED":
               socket.emit("authenticationStatus", {
                 STATUS: "COMPLETED",
-                DISPLAY_NAME: parsedResponse.requestedAttributes.basicUserInfo.name + ' ' + parsedResponse.requestedAttributes.basicUserInfo.surname
+                DISPLAY_NAME: parsedResponse.requestedAttributes.basicUserInfo.name + ' ' + parsedResponse.requestedAttributes.basicUserInfo.surname,
+                DECORATIONS: !callback ? "" : callback()
               });
               i = 61;
               break;

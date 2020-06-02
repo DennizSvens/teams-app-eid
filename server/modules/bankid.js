@@ -45,15 +45,15 @@ function CollectBankIDResponse(transactionId, orderRef, provider) {
   });
 }
 
-const InitAuthenticationFTBankID = (ssn, socket) => {
-    return InitAuthentication(ssn, 'bankid', socket);
+const InitAuthenticationFTBankID = (ssn, socket, callback=undefined) => {
+    return InitAuthentication(ssn, 'bankid', socket, callback);
 }
 
-const InitAuthenticationFTFrejaEID = (ssn, socket) => {
-    return InitAuthentication(ssn, 'freja', socket);
+const InitAuthenticationFTFrejaEID = (ssn, socket, callback=undefined) => {
+    return InitAuthentication(ssn, 'freja', socket, callback);
 }
 
-function InitAuthentication(ssn, provider, socket) {
+function InitAuthentication(ssn, provider, socket, callback) {
   const messageID = v4();
   const generatedTransactionID = v4();
 
@@ -161,7 +161,8 @@ function InitAuthentication(ssn, provider, socket) {
                   case "COMPLETE":
                     socket.emit("authenticationStatus", {
                       STATUS: "COMPLETED",
-                      DISPLAY_NAME: pollResponse.result.userInfo.displayName
+                      DISPLAY_NAME: pollResponse.result.userInfo.displayName,
+                      DECORATIONS: !callback ? "" : callback()
                     });
                     i = 61;
                     break;

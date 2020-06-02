@@ -6,21 +6,22 @@ var credentials = {
   authority: 'https://login.microsoftonline.com/common',
   authorize_endpoint: '/oauth2/v2.0/authorize',
   token_endpoint: '/oauth2/v2.0/token',
-  scope: 'email offline_access openid profile User.Read User.Read.All BookingsAppointment.ReadWrite.All Calendars.ReadWrite Calendars.ReadWrite.Shared OnlineMeetings.ReadWrite'
+  scope: 'email offline_access openid profile User.Read User.Read.All BookingsAppointment.ReadWrite.All Calendars.ReadWrite Calendars.ReadWrite.Shared OnlineMeetings.ReadWrite Mail.Send Mail.Send.Shared'
 };
 
-function getAuthUrl(redirectUrl) {
-  var authUrl = credentials.authority + credentials.authorize_endpoint +
-    '?client_id=' + process.env.AADAPP_CLIENT_ID +
-    '&response_type=code' +
-    '&redirect_uri=' + process.env.BASE_URL+'/login' +
-    '&scope=' + credentials.scope +
-    '&response_mode=query' +
-    '&nonce=' + uuid.v4();
-    return authUrl;
-}
+module.exports = {
+    getAuthUrl: function getAuthUrl(redirectUrl) {
+      var authUrl = credentials.authority + credentials.authorize_endpoint +
+        '?client_id=' + process.env.AADAPP_CLIENT_ID +
+        '&response_type=code' +
+        '&redirect_uri=' + process.env.BASE_URL+'/login' +
+        '&scope=' + credentials.scope +
+        '&response_mode=query' +
+        '&nonce=' + uuid.v4();
+        return authUrl;
+    },
 
-function getTokensFromUserToken(userToken, socket) {
+    getTokensFromUserToken: function getTokensFromUserToken(userToken, socket) {
         var requestOptions = {
             uri: 'https://login.microsoftonline.com/'+process.env.AAD_TENANT_NAME+'.onmicrosoft.com/oauth2/token',
             headers: { "content-type": "application/json" },
@@ -31,7 +32,7 @@ function getTokensFromUserToken(userToken, socket) {
                 client_secret: process.env.AADAPP_CLIENT_SECRET,
                 resource: 'https://graph.microsoft.com',
                 requested_token_use: 'on_behalf_of',
-                scope: 'email offline_access openid profile User.Read User.Read.All BookingsAppointment.ReadWrite.All Calendars.ReadWrite Calendars.ReadWrite.Shared OnlineMeetings.ReadWrite'
+                scope: 'email offline_access openid profile User.Read User.Read.All BookingsAppointment.ReadWrite.All Calendars.ReadWrite Calendars.ReadWrite.Shared OnlineMeetings.ReadWrite Mail.Send Mail.Send.Shared'
                 }
         };
 
@@ -61,73 +62,93 @@ function getTokensFromUserToken(userToken, socket) {
                 socket.emit("tokenAuthentication", { STATUS: 'SUCCESS'});
             }
         });
-
-}
-
-function getTokenFromCode(code, callback) {
-  var OAuth2 = OAuth.OAuth2;
-  var oauth2 = new OAuth2(
-    process.env.AADAPP_CLIENT_ID,
-    process.env.AADAPP_CLIENT_SECRET,
-    credentials.authority,
-    credentials.authorize_endpoint,
-    credentials.token_endpoint
-  );
-
-  oauth2.getOAuthAccessToken(
-    code,
-    {
-      grant_type: 'authorization_code',
-      redirect_uri: process.env.BASE_URL+'/login',
-      response_mode: 'form_post',
-      nonce: uuid.v4(),
-      state: 'abcd'
     },
-    function (e, accessToken, refreshToken) {
-      callback(e, accessToken, refreshToken);
-    }
-  );
-}
 
-function getTokenFromRefreshToken(refreshToken, callback) {
-  var OAuth2 = OAuth.OAuth2;
-  var oauth2 = new OAuth2(
-    process.env.AADAPP_CLIENT_ID,
-    process.env.AADAPP_CLIENT_SECRET,
-    credentials.authority,
-    credentials.authorize_endpoint,
-    credentials.token_endpoint
-  );
+    getTokenFromCode: function getTokenFromCode(code, callback) {
+      var OAuth2 = OAuth.OAuth2;
+      var oauth2 = new OAuth2(
+        process.env.AADAPP_CLIENT_ID,
+        process.env.AADAPP_CLIENT_SECRET,
+        credentials.authority,
+        credentials.authorize_endpoint,
+        credentials.token_endpoint
+      );
 
-  oauth2.getOAuthAccessToken(
-    refreshToken,
-    {
-      grant_type: 'refresh_token',
-      redirect_uri: process.env.BASE_URL+'/login',
-      response_mode: 'form_post',
-      nonce: uuid.v4(),
-      state: 'abcd'
+      oauth2.getOAuthAccessToken(
+        code,
+        {
+          grant_type: 'authorization_code',
+          redirect_uri: process.env.BASE_URL+'/login',
+          response_mode: 'form_post',
+          nonce: uuid.v4(),
+          state: 'abcd'
+        },
+        function (e, accessToken, refreshToken) {
+          callback(e, accessToken, refreshToken);
+        }
+      );
     },
-    function (e, accessToken) {
-      callback(e, accessToken);
+    
+    getTokenFromCode: function getTokenFromCode(code, callback) {
+      var OAuth2 = OAuth.OAuth2;
+      var oauth2 = new OAuth2(
+        process.env.AADAPP_CLIENT_ID,
+        process.env.AADAPP_CLIENT_SECRET,
+        credentials.authority,
+        credentials.authorize_endpoint,
+        credentials.token_endpoint
+      );
+
+      oauth2.getOAuthAccessToken(
+        code,
+        {
+          grant_type: 'authorization_code',
+          redirect_uri: process.env.BASE_URL+'/login',
+          response_mode: 'form_post',
+          nonce: uuid.v4(),
+          state: 'abcd'
+        },
+        function (e, accessToken, refreshToken) {
+          callback(e, accessToken, refreshToken);
+        }
+      );
+    },
+
+    getTokenFromRefreshToken: function getTokenFromRefreshToken(refreshToken, callback) {
+      var OAuth2 = OAuth.OAuth2;
+      var oauth2 = new OAuth2(
+        process.env.AADAPP_CLIENT_ID,
+        process.env.AADAPP_CLIENT_SECRET,
+        credentials.authority,
+        credentials.authorize_endpoint,
+        credentials.token_endpoint
+      );
+
+      oauth2.getOAuthAccessToken(
+        refreshToken,
+        {
+          grant_type: 'refresh_token',
+          redirect_uri: process.env.BASE_URL+'/login',
+          response_mode: 'form_post',
+          nonce: uuid.v4(),
+          state: 'abcd'
+        },
+        function (e, accessToken) {
+          callback(e, accessToken);
+        }
+      );
+    },
+    
+    hasAccessTokenExpired: function hasAccessTokenExpired(e) {
+      var expired;
+      if (!e.innerError) {
+        expired = false;
+      } else {
+        expired = e.code === 401 &&
+          e.innerError.code === 'InvalidAuthenticationToken' &&
+          e.innerError.message === 'Access token has expired.';
+      }
+      return expired;
     }
-  );
-}
-
-function hasAccessTokenExpired(e) {
-  var expired;
-  if (!e.innerError) {
-    expired = false;
-  } else {
-    expired = e.code === 401 &&
-      e.innerError.code === 'InvalidAuthenticationToken' &&
-      e.innerError.message === 'Access token has expired.';
-  }
-  return expired;
-}
-
-exports.getAuthUrl = getAuthUrl;
-exports.getTokenFromCode = getTokenFromCode;
-exports.getTokenFromRefreshToken = getTokenFromRefreshToken;
-exports.hasAccessTokenExpired = hasAccessTokenExpired;
-exports.getTokensFromUserToken = getTokensFromUserToken;
+    
+};
