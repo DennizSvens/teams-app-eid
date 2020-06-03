@@ -32,7 +32,7 @@ function createMeetingFile(meetingData) {
     fs.writeFileSync("./server/data/meetings/"+meetingData.id+".json", content, 'utf8');
 }
 
-function getMeetingFile(meetingId) {
+function loadMeetingFile(meetingId) {
     var content = fs.readFileSync("./server/data/meetings/"+meetingId+".json", 'utf8');
     return JSON.parse(content);        
 }
@@ -75,7 +75,7 @@ module.exports = {
     
     getMeetingFile: function getMeetingFile(meetingId) {
         try {
-            return getMeetingFile(meetingId);    
+            return loadMeetingFile(meetingId);    
         } catch (error) {
             return {
                 id: meetingId,
@@ -86,7 +86,7 @@ module.exports = {
     
     deleteSecureMeeting: async function deleteSecureMeeting(accessToken, internalId) {
         try {           
-            var meetingData = getMeetingFile(internalId);
+            var meetingData = loadMeetingFile(internalId);
             await graphHelper.cancelExchangeMeeting(accessToken,meetingData.meeting.id);
             cancelMeetingFile(internalId);
             
