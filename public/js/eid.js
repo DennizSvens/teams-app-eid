@@ -55,15 +55,16 @@ function initSockets() {
                             //Yay!
                         },
                         failureCallback: function (reason) {
-                            Swal.fire({
-                                icon: 'info',
-                                title: 'Applikationen är blockerad.',
-                                html: 'Inloggningen mot Azure AD misslyckades.<br/> Kontakta IT-Helpdesk och uppge:<br/>'+reason,
-                                heightAuto: false,
-                                allowOutsideClick: false,
-                                showCancelButton: false,
-                                showConfirmButton: false,
-                            });
+                            // We always get CancelledByUser for some strange reason. So just ignore and play like we did it!
+                            //Swal.fire({
+                            //    icon: 'info',
+                            //    title: 'Applikationen är blockerad.',
+                            //    html: 'Inloggningen mot Azure AD misslyckades.<br/> Kontakta IT-Helpdesk och uppge:<br/>'+reason,
+                            //    heightAuto: false,
+                            //    allowOutsideClick: false,
+                            //    showCancelButton: false,
+                            //    showConfirmButton: false,
+                            //});
                         }
                     });
                 break;

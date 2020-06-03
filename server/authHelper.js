@@ -45,6 +45,7 @@ module.exports = {
             if (responseObject.error) {
               switch(responseObject.error) {
                 case "interaction_required":
+                case "invalid_grant":
                     return socket.emit("tokenAuthentication", { STATUS: "ELEVATION_NEEDED", DETAILS: responseObject.error});
                     break;
                 case "invalid_request":
