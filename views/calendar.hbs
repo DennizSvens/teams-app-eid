@@ -219,7 +219,7 @@
                                 showConfirmButton: true
                               }).then((result) => {
                                 if (!result.value) {
-                                    socket.emit("deleteSecureMeeting", {id: info.event.extendedProps.eid_data.eidid});
+                                    socket.emit("deleteSecureMeeting", {id: info.event.extendedProps.eid_data.id});
                                 }
                               });
                             }

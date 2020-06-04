@@ -19,6 +19,17 @@ dotenv.config();
 console.log("Konfigurerad applikationssökväg "+process.env.BASE_URL);
 console.log("Startar i " + (strbool(process.env.TEAMS_INTEGRATED) ? "teamsintegrerat läge" : "fristående läge"));
 console.log("SSL är " + (strbool(process.env.USE_SSL) ? "påslaget" : "avstängt"));
+
+
+authHelper.getApplicationToken(function(token,err){
+    if (!err) {
+        console.log("Hämtade åtkomstnyckel");
+        global.access_token = token;
+    } else {
+        console.log("Kunde inte hämta åtkomstnyckel");
+        process.exit();
+    }
+});
     
 class Module {
   constructor(functionName, exportedFunctionName, buttonName, module) {
@@ -90,10 +101,10 @@ if (strbool(process.env.FREJA_RESTAPI_ENABLE)) {
 //Preppare our session storage
 var io_session = require("express-socket.io-session");
 var e_session = require("express-session");
-var connectLoki = require('connect-loki')(e_session);
+//var connectLoki = require('connect-loki')(e_session);
 
 var ee_session = e_session({
-    store: new connectLoki({ path: './server/data/sessions.db',logErrors: true }),
+    //store: new connectLoki({ path: './server/data/sessions.db',logErrors: true }),
     secret: process.env.COOKIE_SECRET,
     resave: true,
     saveUninitialized: true,
@@ -173,32 +184,42 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
 
     app.get("/meet", (req, res) => {
         var query = req._parsedUrl.query;
-        if (appHelper.validateUUID(query)) {            
-            var file = appHelper.getMeetingFile(query);
-            
-            if (file.isCancelled) {
-                res.render("nomeet.hbs", {
-                    pageTitle: "Mötesportalen",
-                    title: "Mötet inställt",
-                    message: "Mötet har ställts in. Kontakta den du bokade mötet med för mer information.",
-                    meetingId: query
-                });
-            } else {
-                               
-                res.render("meet.hbs", {
-                    pageTitle: "Mötesportalen",
-                    modules: modules,
-                    starttime: appHelper.formatStringTime(file.data.start),
-                    endtime: appHelper.formatStringTime(file.data.end),
-                    subject: file.meeting.subject,
-                    sender: file.sender.name,
-                    recipient: file.recipient.name,                
-                    meetingId: query
-                });
-            }
-        } else {
+        
+        if (!query.length==73) {
             res.status(404)
             res.send();
+        } else {
+
+            var mid = query.substring(37,73);
+            var uid = query.substring(0,36);
+        
+            if (appHelper.validateUUID(mid)&&appHelper.validateUUID(uid)) {            
+                appHelper.getMeetingFile(global.access_token,"users/"+uid,mid).then(function(file) {
+                               
+                    if (file.statusCode) {
+                        res.render("nomeet.hbs", {
+                            pageTitle: "Mötesportalen",
+                            title: "Mötet inställt",
+                            message: "Mötet har ställts in. Kontakta den du bokade mötet med för mer information.",
+                            meetingId: req.query.mid
+                        });
+                    } else {
+                        res.render("meet.hbs", {
+                            pageTitle: "Mötesportalen",
+                            modules: modules,
+                            starttime: appHelper.formatStringTime(file.start),
+                            endtime: appHelper.formatStringTime(file.end),
+                            subject: file.subject,
+                            sender: file.organizer_name,
+                            recipient: file.name,                
+                            meetingId: query
+                        });
+                    }
+                });
+            } else {
+                res.status(404)
+                res.send();
+            }
         }
     });
     
@@ -227,7 +248,7 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
             res.send();
             return;
         }
-        graphHelper.calendarView(req.session.access_token, req.query.start, req.query.end).then(function(result) {
+        graphHelper.calendarView(req.session.access_token, 'me', req.query.start, req.query.end).then(function(result) {
             res.status(200);
             res.send(result);
         });
@@ -313,13 +334,19 @@ io.on("connection", function(socket) {
       modules.forEach(module => {
         socket.on("p"+module.functionName, function(data) {
           
-          var file = appHelper.getMeetingFile(data.meeting);
+          var mid = data.meeting.substring(37,73);
+          var uid = data.meeting.substring(0,36);
+          
+          var file = appHelper.getMeetingFile(global.access_token,"users/"+uid,mid).then(function(file){
+              console.log(file);
 
-          if (!file.isCancelled) {
-              module.module[module.exportedFunctionName](file.recipient.ssn, socket, function(){
-                  return file.meeting.link;
-              });
-          }
+              if (file) {
+                  module.module[module.exportedFunctionName](file.ssn, socket, function(){
+                      return file.joinUrl;
+                  });
+              }
+          });
+
         });
       });
 
@@ -329,7 +356,7 @@ io.on("connection", function(socket) {
       
       socket.on('createSecureMeeting', function(data) { 
         if (socket.handshake.session.isAuthenticated) {
-            appHelper.createSecureMeeting(socket.handshake.session.access_token,data.start,data.end, data.ssn, data.name, data.email, data.subject).then(function(result){
+            appHelper.createSecureMeeting(socket.handshake.session.access_token,'me',data.start,data.end, data.ssn, data.name, data.email, data.subject).then(function(result){
                 socket.emit("meetingCreated", { NAME: data.name, START: appHelper.formatStringTime(data.start)});
             });
         }
@@ -337,7 +364,7 @@ io.on("connection", function(socket) {
       
       socket.on('deleteSecureMeeting', function(data) {         
         if (socket.handshake.session.isAuthenticated) {
-            appHelper.deleteSecureMeeting(socket.handshake.session.access_token,data.id).then(function(result){
+            appHelper.deleteSecureMeeting(socket.handshake.session.access_token,'me',data.id).then(function(result){
                 socket.emit("calendarUpdate", {});
             });
         }

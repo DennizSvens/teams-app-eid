@@ -80,19 +80,9 @@ Slutligen rekomenderar vi också att du byter ut COOKIE_SECRET till en egen fras
 * Skapa en ny klienthemlighet, med obegränsad utgånstid.
 * Kopiera hemligheten till .env (AADAPP_CLIENT_SECRET)
 5. Under 'API-behörigheter' ange för 'Microsoft Graph':
-* offline_access
-* openid
-* profile
-* User.Read
-* User.Read.All
-* Mail.Send
-* Mail.Send.Shared
-* Mail.ReadWrite
-* Mail.ReadWrite.Shared
-* Calendars.ReadWrite
-* Calendars.ReadWrite.Shared
-* OnlineMeetings.ReadWrite
-* BookingsAppointment.ReadWrite.All
+Bevilja följande rättigheter och godkän dessa åt dina använder administrativt
+* Delegerade: email openid profile User.Read Calendar.ReadWrite Mail.Send
+* Program: User.Read.All, Calendars.Read
 6. Under 'Exponera ett API' ange 'URI för program-ID'
 * Skall vara api://publikurl:port/appid som du genererade för teamsappen (ex: api://myserver.com:3000/34dc9891-6a50-41a4-8e5c-acd9812b757c)
 7. Under 'Exponera ett API' skapa en ny omfattning

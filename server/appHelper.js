@@ -2,46 +2,6 @@ const fs = require('fs');
 const graphHelper = require('./graphHelper.js');
 const { v4 } = require("uuid");
 
-function createMeetingObject(internalId,start,end,sender_name,sender_email,recipient_name,recipient_email,recipient_ssn,subject,link,id) {
-    return {
-        id: internalId,
-        isCancelled: false,
-        data: {
-            start: start,
-            end: end
-        },
-        recipient: {
-            name: recipient_name,
-            email: recipient_email,
-            ssn: recipient_ssn
-        },
-        sender: {
-            name: sender_name,
-            email: sender_email
-        },
-        meeting: {
-            subject: subject,
-            link: link,
-            id: id,
-        }            
-    };
-}
-
-function createMeetingFile(meetingData) {
-    var content = JSON.stringify(meetingData);
-    fs.writeFileSync("./server/data/meetings/"+meetingData.id+".json", content, 'utf8');
-}
-
-function loadMeetingFile(meetingId) {
-    var content = fs.readFileSync("./server/data/meetings/"+meetingId+".json", 'utf8');
-    return JSON.parse(content);        
-}
-
-
-function cancelMeetingFile(meetingId) {
-    var content = JSON.stringify({id:meetingId,isCancelled: true});
-    fs.writeFileSync("./server/data/meetings/"+meetingId+".json", content, 'utf8');
-}
 
 function tokenTemplate(template,tokenObject) {
     var content = fs.readFileSync("./server/templates/"+template+".txt", 'utf8');
@@ -51,13 +11,13 @@ function tokenTemplate(template,tokenObject) {
     return content;
 }
 
-async function sendTemplateMessage(accessToken, toName, toEmail, subject, template, tokenObject) {
+async function sendTemplateMessage(accessToken, user, toName, toEmail, subject, template, tokenObject) {
     var content = fs.readFileSync("./server/templates/"+template+".txt", 'utf8');
     
     for(var tokenKey in tokenObject) {
         content = content.replace("$"+tokenKey+"$",tokenObject[tokenKey]);
     }
-    var messageSender = await graphHelper.createAndSendMessage(accessToken, toName, toEmail, subject, content);
+    var messageSender = await graphHelper.createAndSendMessage(accessToken, user, toName, toEmail, subject, content);
     return messageSender;
 }
 
@@ -73,28 +33,24 @@ module.exports = {
         return inputString.replace("T"," ");
     },
     
-    getMeetingFile: function getMeetingFile(meetingId) {
+    getMeetingFile: async function getMeetingFile(accessToken, user, meetingId) {
         try {
-            return loadMeetingFile(meetingId);    
+            return await graphHelper.getSpecificMeeting(accessToken, user, meetingId);
         } catch (error) {
-            return {
-                id: meetingId,
-                isCancelled: true 
-            };
+            return undefined;
         }
     },
     
-    deleteSecureMeeting: async function deleteSecureMeeting(accessToken, internalId) {
-        try {           
-            var meetingData = loadMeetingFile(internalId);
-            await graphHelper.cancelExchangeMeeting(accessToken,meetingData.meeting.id);
-            cancelMeetingFile(internalId);
+    deleteSecureMeeting: async function deleteSecureMeeting(accessToken,user, internalId) {
+        try {      
+            var meetingData = await graphHelper.getSpecificMeeting(accessToken,user,internalId);
+            await graphHelper.cancelExchangeMeeting(accessToken,user,meetingData.exchange_id);
             
-            await sendTemplateMessage(accessToken, meetingData.recipient.name, meetingData.recipient.email, meetingData.meeting.subject, 'external_email_cancelled', {
-                name: meetingData.sender.name,
-                starttime: meetingData.data.start,
-                endtime: meetingData.data.end,
-                subject: meetingData.meeting.subject
+            await sendTemplateMessage(accessToken,user, meetingData.name, meetingData.email, meetingData.subject, 'external_email_cancelled', {
+                name: meetingData.organizer_name,
+                starttime: meetingData.start,
+                endtime: meetingData.end,
+                subject: meetingData.subject
             });            
             
             return {};
@@ -103,7 +59,7 @@ module.exports = {
         }
     }, 
     
-    createSecureMeeting: async function createSecureMeeting(accessToken, startTime, endTime, ssn, name, email, subject) {
+    createSecureMeeting: async function createSecureMeeting(accessToken,user, startTime, endTime, ssn, name, email, subject) {
         var attendees = new graphHelper.meetingAttendeeList();
                
         var content = tokenTemplate('calendar_content', {
@@ -115,13 +71,12 @@ module.exports = {
         
         try {           
             var internalId = v4();
-            var exchangeMeeting = await graphHelper.createExchangeMeeting(accessToken,internalId,startTime,endTime, ssn, name,email, subject, content, attendees.getAttendeeList());
-            var result = createMeetingObject(internalId,startTime,endTime,exchangeMeeting.organizer.emailAddress.name,exchangeMeeting.organizer.emailAddress.address,name,email,ssn,subject,exchangeMeeting.onlineMeeting.joinUrl,exchangeMeeting.id)
-            createMeetingFile(result);
-            
-            await sendTemplateMessage(accessToken, name, email, subject, 'external_email_created', {
+            var exchangeMeeting = await graphHelper.createExchangeMeeting(accessToken,user,internalId,startTime,endTime, ssn, name,email, subject, content, attendees.getAttendeeList());
+            var userId = await graphHelper.getUserId(accessToken,user);
+
+            await sendTemplateMessage(accessToken,user,name, email, subject, 'external_email_created', {
                 name: exchangeMeeting.organizer.emailAddress.name,
-                link: process.env.BASE_URL+'/meet?'+internalId,
+                link: process.env.BASE_URL+'/meet?'+userId+'-'+internalId,
                 starttime: startTime,
                 endtime: endTime,
                 subject: subject
