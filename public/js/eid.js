@@ -89,81 +89,66 @@ function initSockets() {
     });
 
     socket.on("authenticationStatus", data => {
-        switch (data.STATUS) {
-            case "COMPLETED": {
+        if (data.status === 'initialized') {
+          Swal.update({
+            title: "Skickar legitimeringsbegäran.."
+          });
+        } else if (data.status === 'pending') {
+            switch (data.code) {
+                case "pending_delivered": {
+                  Swal.update({
+                    title: "Be användaren starta appen.."
+                  });
+                  break;
+                }
+                case "pending_user_in_app": {
+                  Swal.update({
+                    title: "Mottagaren har startat appen.."
+                  });
+                  break;
+                }
+            }
+        } else if (data.status === 'error') {
+            switch (data.code) {
+                case "cancelled_by_user": {
+                  Swal.close();
+                  Swal.fire({
+                    html: "Personen nekade eller avbröt legitimeringen.",
+                    title: "Försök igen!",
+                    icon: "error",
+                    heightAuto: false        
+                  });
+                  break;
+                }
+                case "expired_transaction": {
+                  Swal.close();
+                  Swal.fire({
+                    html: "Legitimering misslyckades",
+                    title: "Tiden för legitimering gick ut",
+                    icon: "error",
+                    heightAuto: false
+                  });
+                  break;
+                }
+                default: {
+                  Swal.close();
+                  Swal.fire({
+                    title: "Ett fel uppstod",
+                    html: data.description,
+                    icon: "error",
+                    heightAuto: false
+                    });
+                  break;
+                }
+            }
+        } else {
               Swal.close();
               Swal.fire({
                 title: "Legitimerad!",
-                html: `<b>${data.DISPLAY_NAME}</b> har legitimerat sig!`,
+                html: `<b>${data.user.fullname}</b> har legitimerat sig!`,
                 icon: "success",
                 heightAuto: false
               });
-              break;
-            }
-            case "INITIALIZED": {
-              Swal.update({
-                title: "Skickar legitimeringsbegäran.."
-              });
-              break;
-            }
-            case "PENDING_NO_USER": {
-              Swal.update({
-                title: "Be användaren starta appen.."
-              });
-              break;
-            }
-            case "PENDING_DELIVERED": {
-              Swal.update({
-                title: "Mottagaren har startat appen.."
-              });
-              break;
-            }
-            case "PENDING": {
-              Swal.update({
-                title: "Väntar på användaren.."
-              });
-              break;
-            }
-            case "USER_DECLINED": {
-              Swal.close();
-              Swal.fire({
-                html: "Personen nekade eller avbröt legitimeringen.",
-                title: "Försök igen!",
-                icon: "error",
-                heightAuto: false        
-              });
-              break;
-            }
-            case "EXPIRED": {
-              Swal.close();
-              Swal.fire({
-                html: "Legitimering misslyckades",
-                title: "Tiden för legitimering gick ut",
-                icon: "error",
-                heightAuto: false
-              });
-              break;
-            }
-            case "TIMEOUT": {
-              Swal.close();
-              Swal.fire({
-                html: "Legitimering misslyckades",
-                title: "Tiden för legitimering gick ut",
-                icon: "error",
-                heightAuto: false
-              });
-              break;
-            }
-            case "ERROR": {
-              Swal.close();
-              Swal.fire({
-                title: "Ett fel uppstod",
-                html: data.MESSAGE,
-                icon: "error",
-                heightAuto: false
-                });
-              break;
-            }
         }
     });
 }
