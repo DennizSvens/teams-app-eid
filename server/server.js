@@ -1,13 +1,17 @@
 const express = require("express");
 const hbs = require("hbs");
 const dotenv = require("dotenv");
+const fs = require("fs");
+
+// Internal support modules
 const authHelper = require('./authHelper.js');
 const graphHelper = require('./graphHelper.js');
 const appHelper = require('./appHelper.js');
-const fs = require("fs");
-const { v4 } = require("uuid");
+
+// Our global app modules
 const modules = [];
 
+// Supporting function to compare bolleanish strings
 function strbool(value) {
     return value=="true" ? true : false;
 }
@@ -20,7 +24,7 @@ console.log("Konfigurerad applikationssökväg "+process.env.BASE_URL);
 console.log("Startar i " + (strbool(process.env.TEAMS_INTEGRATED) ? "teamsintegrerat läge" : "fristående läge"));
 console.log("SSL är " + (strbool(process.env.USE_SSL) ? "påslaget" : "avstängt"));
 
-
+// Initialize the application token from azure AD
 authHelper.getApplicationToken(function(token,err){
     if (!err) {
         console.log("Hämtade åtkomstnyckel");
@@ -31,89 +35,93 @@ authHelper.getApplicationToken(function(token,err){
     }
 });
     
+// Definition of a module   
 class Module {
-  constructor(functionName, exportedFunctionName, buttonName, module) {
+  constructor(buttonName, functionName, module, config) {
     this.functionName = functionName;
-    this.exportedFunctionName = exportedFunctionName;
     this.buttonName = buttonName;
-    this.module = require(module);
+    this.provider = require('eid-provider')(module);
+    
+    // Load default config
+    var defaultConfig = strbool(process.env.AUTH_TESTING) ? this.provider.settings.testing : this.provider.settings.production;
+    
+    // Override each config from the external
+    for(var key in config) {
+        defaultConfig[key]=config[key];
+    }
+    
+    // Set the config for the module
+    this.provider.initialize(defaultConfig);
   }
 }
 
+// Lets see which modules to start up
+// Native services
+if (strbool(process.env.FREJA_ENABLE)) {
+  console.log('Aktiverar Freja eID via Freja API');
+  modules.push(new Module("Legitimera med Freja eID","initAuthenticationFrejaEID","frejaeid",{
+    client_cert: fs.readFileSync(process.cwd()+"/"+process.env.FREJA_CERT),
+    password: process.env.FREJA_PASS,
+    minimumLevel: process.env.FREJA_MINIMUM_REGISTRATION_LEVEL
+  }));
+}
+if (strbool(process.env.BANKID_ENABLE)) {
+  console.log('Aktiverar BankID via BankID API');
+  modules.push(new Module("Legitimera med BankID","initAuthenticationBankID","bankid",{
+    client_cert: fs.readFileSync(process.cwd()+"/"+process.env.BANKID_CERT),
+    password: process.env.BANKID_PASS,
+    allowFingerprint: strbool(process.env.BANKID_ALLOW_FINGERPRINT)
+  }));
+}
+if (strbool(process.env.FREJAORGID_ENABLE)) {
+  console.log('Aktiverar OrgID via Freja eID');
+  modules.push(new Module("Legitimera med OrganisationsID","initAuthenticationFrejaOrgID","frejaorgid",{
+    client_cert:  fs.readFileSync(process.cwd()+"/"+process.env.FREJA_CERT),
+    password:  process.env.FREJA_PASS
+  }));
+}
+// Gateway services
 if (strbool(process.env.FUNKTIONSTJANSTER_BANKID)) {
   console.log('Aktiverar BankID via Funktionstjänster');
-  modules.push(
-    new Module(
-      "initAuthenticationFTBankID",
-      "InitAuthenticationFTBankID",
-      "Legitimera med BankID",
-      "./modules/bankid"
-    )
-  );
+  modules.push(new Module("Legitimera med BankID","initAuthenticationFTBankID","ftbankid",{
+    display_name: process.env.FUNKTIONSTJANSTER_RP_DISPLAYNAME,
+    policy: process.env.FUNKTIONSTJANSTER_POLICY
+  }));
 }
 if (strbool(process.env.FUNKTIONSTJANSTER_FREJA)) {
   console.log('Aktiverar Freja eID via Funktionstjänster');
-  modules.push(
-    new Module(
-      "initAuthenticationFTFrejaEID",
-      "InitAuthenticationFTFrejaEID",
-      "Legitimera med Freja eID",
-      "./modules/bankid"
-    )
-  );
+  modules.push(new Module("Legitimera med Freja eID","initAuthenticationFTFrejaEID","ftfrejaeid",{
+    display_name: process.env.FUNKTIONSTJANSTER_RP_DISPLAYNAME,
+    policy: process.env.FUNKTIONSTJANSTER_POLICY    
+  }));
 }
-
 if (strbool(process.env.SVENSKEIDENTITET_BANKID)) {
   console.log('Aktiverar BankID via Svensk e-Identitet');
-  modules.push(
-    new Module(
-      "initAuthenticationSEIDBankID",
-      "InitAuthenticationSEIDBankID",
-      "Legitimera med BankID",
-      "./modules/grandid"
-    )
-  );
+  modules.push(new Module("Legitimera med BankID","initAuthenticationSEIDBankID","gbankid",{
+    servicekey: process.env.SVENSKEIDENTITET_BANKIDKEY,
+    apikey: process.env.SVENSKEIDENTITET_APIKEY
+  }));
 }
 if (strbool(process.env.SVENSKEIDENTITET_FREJA)) {
   console.log('Aktiverar Freja eID via Svensk e-Identitet');
-  modules.push(
-    new Module(
-      "initAuthenticationSEIDFrejaEID",
-      "InitAuthenticationSEIDFrejaEID",
-      "Legitimera med Freja eID",
-      "./modules/grandid"
-    )
-  );
-}
-
-if (strbool(process.env.FREJA_RESTAPI_ENABLE)) {
-  console.log('Aktiverar Freja eID via Freja REST Api');
-  modules.push(
-    new Module(
-      "initAuthenticationFrejaAPI",
-      "InitAuthenticationFrejaAPI",
-      "Legitimera med Freja eID",
-      "./modules/frejaeid_restapi"
-    )
-  );
+  modules.push(new Module("Legitimera med Freja eID","initAuthenticationSEIDFrejaEID","gfrejaeid",{
+    servicekey: process.env.SVENSKEIDENTITET_FREJAEIDKEY,
+    apikey: process.env.SVENSKEIDENTITET_APIKEY
+  }));
 }
 
 //Preppare our session storage
 var io_session = require("express-socket.io-session");
 var e_session = require("express-session");
-//var connectLoki = require('connect-loki')(e_session);
-
 var ee_session = e_session({
-    //store: new connectLoki({ path: './server/data/sessions.db',logErrors: true }),
     secret: process.env.COOKIE_SECRET,
     resave: true,
     saveUninitialized: true,
     cookie: { secure: strbool(process.env.USE_SSL) },
     name: 'eidapp'
 });
-
-
 const sharedsession = require("express-socket.io-session");
+const { env } = require("process");
 
 // Setup express
 var app = express();
@@ -318,13 +326,19 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
 io.use(io_session(ee_session, {
     autoSave:true
 })); 
+
 //SocketIO incomming
 io.on("connection", function(socket) {
 
   modules.forEach(module => {
     socket.on(module.functionName, function(data) {
+
         if (socket.handshake.session.isAuthenticated || !strbool(process.env.TEAMS_INTEGRATED)) {
-            module.module[module.exportedFunctionName](data.ssn, socket);
+            module.provider.authRequest(data.ssn,
+                function(init) {      socket.emit("authenticationStatus", init); },
+                function(update) {    socket.emit("authenticationStatus", update); }).then(
+                function(completed) { socket.emit("authenticationStatus", completed); }
+            )
         }
     });
   });
@@ -338,13 +352,17 @@ io.on("connection", function(socket) {
           var uid = data.meeting.substring(0,36);
           
           var file = appHelper.getMeetingFile(global.access_token,"users/"+uid,mid).then(function(file){
-              console.log(file);
 
               if (file) {
-                  module.module[module.exportedFunctionName](file.ssn, socket, function(){
-                      return file.joinUrl;
-                  });
+                module.provider.authRequest(data.ssn,
+                function(init) {      socket.emit("authenticationStatus", init); },
+                function(update) {    socket.emit("authenticationStatus", update); }).then(
+                function(completed) {
+                    if (completed.status==="completed") { completed.joinUrl = file.joinUrl; }
+                    socket.emit("authenticationStatus", completed);
+                });
               }
+              
           });
 
         });

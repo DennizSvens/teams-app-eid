@@ -3,7 +3,8 @@ Botkyrka EID Teams App
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FDennizSvens%2Fteams-app-eid%2Fmaster%2Fazuredeploy.json)
 
 * Skapad av Denniz Svens / Liminity AB för Botkyrka Kommun
-* Tillägg för Freja eID, Svensk e-Identitet samt Azure AD och Microsoft Teamsintegration av Daniel Sörlöv
+* Authenticeringsbilbliotek eid-provider av Daniel Sörlöv
+* Azure AD och Microsoft Teams integration av Daniel Sörlöv
 * UI/Test av Erik Olsson
 
 Webbapplikation för att legitimera medborgare tänkt att integreras i Teams
@@ -17,11 +18,13 @@ Webbapplikation för att legitimera medborgare tänkt att integreras i Teams
 
 ## Krav för att legitimera mot testmiljön (test.env)
 
-Du måste ha tillgång till en eller flera legitimeringstjänster, just nu stöjds dessa
+Du måste ha tillgång till en eller flera legitimeringstjänster. Applikationen använder [eid-provider](https://github.com/DSorlov/eid-provider) biblioteket för authentificering så i största mån stödjs de leverantörer som stödjs i det biblioteket.
 
-* BankID via [CGI/Funktionstjänster](https://doc.funktionstjanster.se/#Utgivare/BankID/)
-* BankID och Freja eID via [GrandID](https://e-identitet.se/auth/integrationsmetoder/grandid-api/) (Svensk e-Identitet)
-* Freja eID direkt via deras [Rest API tjänst](https://org.frejaeid.com/for-utvecklare/)
+* BankID (via deras eget api)
+* Freja eID (via deras eget api)
+* BankID och Freja eID via CGI (Funktionstjänster)
+* BankID och Freja eID via Svensk e-Identitet (GrandID)
+* Freja OrgID (via deras eget api)
 
 ## Skapa testidentiteter
 

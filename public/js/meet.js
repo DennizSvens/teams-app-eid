@@ -15,86 +15,79 @@ function initSockets() {
     socket = io.connect();
 
     socket.on("authenticationStatus", data => {
-        switch (data.STATUS) {
-            case "COMPLETED": {
-                Swal.close();
-                Swal.fire({
-                         heightAuto: false,        
-                         title: 'Välkommen!',
-                         text: undefined,
-                         html: 'Du har bekräftat din identitet!<br/><br/><a href="'+data.DECORATIONS+'">Klicka här för att ansluta till mötet.</a>',
-                         icon: 'success',
-                         showCancelButton: false,
-                         showConfirmButton: false,
-                         imageUrl: undefined
-                }); 
-             break;
-            }
-            case "INITIALIZED": {
-              Swal.update({
-                title: "Skickar legitimeringsbegäran.."
-              });
-              break;
-            }
-            case "PENDING_NO_USER": {
-              Swal.update({
-                title: "Starta e-legitimations appen.."
-              });
-              break;
-            }
-            case "PENDING_DELIVERED": {
-              Swal.update({
-                title: "Authenticera dig i appen.."
-              });
-              break;
-            }
-            case "PENDING": {
-              Swal.update({
-                title: "Väntar.."
-              });
-              break;
-            }
-            case "USER_DECLINED": {
-              Swal.close();
-              Swal.fire({
-                html: "Du nekade eller avbröt.",
-                title: "Försök igen!",
-                icon: "error",
-                heightAuto: false        
-              });
-              break;
-            }
-            case "EXPIRED": {
-              Swal.close();
-              Swal.fire({
-                html: "Legitimering misslyckades",
-                title: "Tiden för legitimering gick ut.",
-                icon: "error",
-                heightAuto: false
-              });
-              break;
-            }
-            case "TIMEOUT": {
-              Swal.close();
-              Swal.fire({
-                html: "Legitimering misslyckades",
-                title: "Tiden för legitimering gick ut.",
-                icon: "error",
-                heightAuto: false
-              });
-              break;
-            }
-            case "ERROR": {
-              Swal.close();
-              Swal.fire({
-                title: "Ett fel uppstod",
-                html: 'Ett internt fel uppstod.',
-                icon: "error",
-                heightAuto: false
-                });
-              break;
-            }
+        
+        if (data.status === 'initialized') {
+          Swal.update({
+            title: "Skickar legitimeringsbegäran.."
+          });            
+        } else if (data.status==='error') {
+            switch (data.code) {
+                case "cancelled_by_user": {
+                  Swal.close();
+                  Swal.fire({
+                    html: "Du nekade eller avbröt.",
+                    title: "Försök igen!",
+                    icon: "error",
+                    heightAuto: false        
+                  });
+                  break;
+                }
+                case "expired_transaction": {
+                  Swal.close();
+                  Swal.fire({
+                    html: "Legitimering misslyckades",
+                    title: "Tiden för legitimering gick ut.",
+                    icon: "error",
+                    heightAuto: false
+                  });
+                  break;
+                }
+                default: {
+                  Swal.close();
+                  Swal.fire({
+                    title: "Ett fel uppstod",
+                    html: 'Ett internt fel uppstod.',
+                    icon: "error",
+                    heightAuto: false
+                    });
+                  break;
+                }
+            }            
+        } else if (data.status==='pending') {
+            switch (data.status) {
+                case "pending_notdelivered": {
+                  Swal.update({
+                    title: "Starta e-legitimations appen.."
+                  });
+                }
+                case "pending_delivered": {
+                  Swal.update({
+                    title: "Starta e-legitimations appen.."
+                  });
+                  break;
+                }
+                case "pending_user_in_app": {
+                  Swal.update({
+                    title: "Authenticera dig i appen.."
+                  });
+                  break;
+                }
+            }            
+        } else {
+            Swal.close();
+            Swal.fire({
+                     heightAuto: false,        
+                     title: 'Välkommen!',
+                     text: undefined,
+                     html: 'Du har bekräftat din identitet!<br/><br/><a href="'+data.joinUrl+'">Klicka här för att ansluta till mötet.</a>',
+                     icon: 'success',
+                     showCancelButton: false,
+                     showConfirmButton: false,
+                     imageUrl: undefined
+            }); 
         }
+            
+       
     });
 }
 
