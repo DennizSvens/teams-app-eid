@@ -2,6 +2,7 @@ const express = require("express");
 const hbs = require("hbs");
 const dotenv = require("dotenv");
 const fs = require("fs");
+const helmet = require('helmet');
 
 // Internal support modules
 const authHelper = require('./authHelper.js');
@@ -128,6 +129,7 @@ var app = express();
 app.set('trust proxy', 1) // trust first proxy
 app.set("viewengine", "hbs");
 app.use(ee_session);
+app.use(helmet());
 
 app.use("/public/", express.static(__dirname + "/../public"));
 hbs.registerPartials(__dirname + "/../views/partials");
