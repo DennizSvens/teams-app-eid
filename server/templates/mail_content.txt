@@ -1,0 +1,18 @@
+<h2>Säkert e-postmeddelande</h2>
+<p>Du har fått ett säkert e-postmeddelande. Avsändaren har beslutat att informationen kräver att du legitimerar dig innan du kan läsa informationen. För att legitimera dig krävs att du använder en e-legitimation. Har du inte e-elgitimation eller vill bekräfta detta meddelandets äkthet så kontakta kommunen på 1234-12341234 eller via e-post enligt nedan. </p>
+<p><b>Meddelandet sändes av:</b> <br/>
+$sender_name$ <br/>
+$sender_email$<br/><br/>
+<b>Ärende:</b> <br/>
+$subject$ <br/>
+</p>
+<table border="1" cellpadding="5">
+<tbody>
+<tr>
+<td><strong><a href="$link$">Klicka här för att legitimera dig</a></td>
+</tr>
+</tbody>
+</table>
+<br/><br/>
+<i>Vänligen</i><br/>
+Botkyrka Kommun
