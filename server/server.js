@@ -129,7 +129,9 @@ var app = express();
 app.set('trust proxy', 1) // trust first proxy
 app.set("viewengine", "hbs");
 app.use(ee_session);
-app.use(helmet());
+app.use(helmet({
+  frameguard: false
+}));
 
 app.use("/public/", express.static(__dirname + "/../public"));
 hbs.registerPartials(__dirname + "/../views/partials");
@@ -271,7 +273,7 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
             return;
         }
         res.render("config.hbs", {
-            tabUrl: process.env.BASE_URL,
+            tabUrl: process.env.BASE_URL+'/calendar',
             tabName: process.env.TEAMS_TEAM_TABNAME,
             tabId: req.query.team+'-'+req.query.channel+'-eidtab'
         });
@@ -356,7 +358,7 @@ io.on("connection", function(socket) {
           var file = appHelper.getMeetingFile(global.access_token,"users/"+uid,mid).then(function(file){
 
               if (file) {
-                module.provider.authRequest(data.ssn,
+                module.provider.authRequest(file.ssn,
                 function(init) {      socket.emit("authenticationStatus", init); },
                 function(update) {    socket.emit("authenticationStatus", update); }).then(
                 function(completed) {
