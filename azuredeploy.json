@@ -9,6 +9,13 @@
             "type": "string",
             "defaultValue": "https://www.botkyrka.se/images/18.3f7cdc58159ed1e625a1a2f8/1486981413543/bk_logo_centr_cmyk_neg_2015.png"
         },
+        "Teams Integrated mode": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "if true, see readme.md"
+            }
+        },
         "Azure AD Tenant name": {
             "type": "string",
             "metadata": {
@@ -169,7 +176,7 @@
                     "location": "[resourceGroup().location]",
                     "properties": {
                         "repoUrl": "https://github.com/DennizSvens/teams-app-eid",
-                        "branch": "dev",
+                        "branch": "master",
                         "isManualIntegration": true
                     },
                     "dependsOn": [
@@ -210,10 +217,11 @@
                         "LOGO_URL": "[parameters('Logo URL')]",
                         "BASE_URL": "[concat('https://', parameters('name'), '.azurewebsites.net')]",
                         "USE_SSL": "false",
-                        "TEAMS_INTEGRATED": "true",
+                        "TEAMS_INTEGRATED": "[toLower(string(parameters('Teams Integrated mode')))]",
                         "AAD_TENANT_NAME": "[parameters('Azure AD Tenant name')]",
                         "AAD_CLIENT_ID": "[parameters('Azure AD Client id')]",
                         "AAD_CLIENT_SECRET": "[parameters('Azure AD Client Secret')]",
+                        "COOKIE_SECRET": "[uniqueString(resourceGroup().id,deployment().name)]",
                         "TEAMS_TEAM_TABNAME": "Legitimera"
                     }
                 }
