@@ -1,0 +1,12 @@
+<h2>S&auml;kert Teamsm&ouml;te Inställt</h2>
+<p>Detta möte har ställts in</p>
+<table border="1" cellpadding="5">
+<tbody>
+<tr>
+<td>
+<p><strong>$subject$</strong> med <strong>$name$</strong><br />mellan $starttime$ och $endtime$.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><em>V&auml;nligen</em><br /><em>Botkyrka Kommun</em></p>

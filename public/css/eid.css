@@ -1,0 +1,76 @@
+html, body {
+  height: 100%;
+}
+
+body {
+  display: -ms-flexbox;
+  display: -webkit-box;
+  display: flex;
+  -ms-flex-align: center;
+  -ms-flex-pack: center;
+  -webkit-box-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  justify-content: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+body.theme-light {
+  background-color: #F3F2F1;
+}
+
+body.theme-dark {
+  background-color: #2d2c2c;
+}
+
+body.swal2-shown > [aria-hidden="true"] {
+  filter: blur(10px);
+}
+body > * {
+    transition: 0.15s filter linear;
+}
+
+
+body.theme-dark h1 {
+  color: #fff;
+}
+
+body.theme-light h1 {
+  color: #000;
+}
+
+body.theme-light .logo {
+  content:url("/public/logo-black.png");
+}
+
+body.theme-dark .logo {
+  content:url("/public/logo-white.png");
+}
+
+.form-eidauth {
+  width: 100%;
+  max-width: 330px;
+  padding: 15px;
+  margin: 0 auto;
+}
+
+.form-eidauth .checkbox {
+  font-weight: 400;
+}
+
+.form-eidauth .form-control {
+  position: relative;
+  box-sizing: border-box;
+  height: auto;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.form-eidauth .form-control:focus {
+  z-index: 2;
+}
+
+a {
+  word-break: break-all;
+}

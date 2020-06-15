@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="sv">
+
+  <head>
+    <title>{{pageTitle}}</title>
+    <script>
+        window.onload = function(e) {
+          window.close();
+          window.opener.document.dispatchEvent(new Event('authStateChanged'));
+        }
+    </script>
+  </head>
+
+  <body>
+  </body>
+
+</html>

@@ -1,0 +1,11 @@
+<h2>Säkert Teamsmöte: $subject$</h2>
+<p>Detta &auml;r en platsh&aring;llare f&ouml;r ett säkert möte. F&ouml;r att mottagaren skall kunna ansluta sig till m&ouml;tet kr&auml;vs att de anv&auml;nder en speciell l&auml;nk som har skickats till dem via e-post d&auml;r det kr&auml;vs att de f&ouml;rst m&aring;ste authentificera sig med e-legitimation.</p>
+<br/><br/>
+<table border="1" cellpadding="5">
+<tbody>
+<tr>
+<td><strong>Du har m&ouml;te med:</strong><br />$ssn$, $name$<br />$email$</td>
+</tr>
+</tbody>
+</table>
+<br/><br/>

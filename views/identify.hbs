@@ -1,0 +1,58 @@
+{{> head}}
+        <link href="/public/css/eid.css" rel="stylesheet">
+        <script src="/public/js/MicrosoftTeams.min.js"></script>
+        <script src="/public/js/eid.js"></script>
+    </head>
+
+    <body class="text-center">
+
+        <form id="EidAuthForm" class="form-eidauth">
+            <img class="mb-4 logo" src="/public/logo-white.png" height="108" width="85">
+            <h1 class="h3 font-weight-normal">Legitimera medborgare</h1>
+            <label for="inputSSN" class="sr-only">Personnummer</label>
+            <input type="username" id="inputSSN" class="form-control mb-2" placeholder="200001010000 (12 siffror)" name="ssn"
+                autofocus>
+            {{#each modules}}
+            <button class="btn btn-lg btn-success btn-block" id="{{this.functionName}}"
+                type="button">{{this.buttonName}}</button>
+            {{/each}}
+
+            <p class="mt-5 mb-3 text-muted">&copy; Botkyrka Kommun 2020 </p>
+        </form>
+        <script>
+
+        {{#each modules}}
+            $("#{{this.functionName}}").on("click", function () {
+                initiateRequest("{{this.functionName}}");
+            });
+        {{/each }}
+        {{#ifCond modules.length '==' 1}}
+            $("#EidAuthForm").submit(function(e) {
+                e.preventDefault();
+                initiateRequest("{{modules.0.functionName}}");
+            });
+        {{/ifCond}}
+        {{#ifCond modules.length '>' 1}}
+            $("#EidAuthForm").submit(function(e) {
+                e.preventDefault();
+            });
+        {{/ifCond}}
+        
+            $(function() {
+                function beforeInit() {
+                    $("#EidAuthForm").hide();
+                }
+                
+                function afterInit() {
+                    $("#EidAuthForm").show();
+                }
+                    
+                initializeApp({{teamsMode}},beforeInit,afterInit);
+            });
+
+        </script>
+
+    </body>
+
+{{> footer}}
+

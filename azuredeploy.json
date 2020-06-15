@@ -9,6 +9,32 @@
             "type": "string",
             "defaultValue": "https://www.botkyrka.se/images/18.3f7cdc58159ed1e625a1a2f8/1486981413543/bk_logo_centr_cmyk_neg_2015.png"
         },
+        "Teams Integrated mode": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "if true, see readme.md"
+            }
+        },
+        "Azure AD Tenant name": {
+            "type": "string",
+            "metadata": {
+                "description": "Azure AD tenant name"
+            },
+            "defaultValue": "kommun.onmicrosoft.com"
+        },
+        "Azure AD Client id": {
+            "type": "string",
+            "metadata": {
+                "description": "Azure AD Client ID, read README.md for permissions"
+            }
+        },
+        "Azure AD Client Secret": {
+            "type": "string",
+            "metadata": {
+                "description": "Azure AD Client ID, read README.md for permissions"
+            }
+        },
         "Use CGI Funktionstjänster API for BankID": {
             "type": "bool",
             "defaultValue": true
@@ -188,7 +214,15 @@
                         "SVENSKEIDENTITET_APIKEY": "[parameters('Svensk e-identitet API key')]",
                         "SVENSKEIDENTITET_BANKIDKEY": "[parameters('Svensk e-identitet BankID key')]",
                         "SVENSKEIDENTITET_FREJAEIDKEY": "[parameters('Svensk e-identitet Freja eID key')]",
-                        "LOGO_URL": "[parameters('Logo URL')]"
+                        "LOGO_URL": "[parameters('Logo URL')]",
+                        "BASE_URL": "[concat('https://', parameters('name'), '.azurewebsites.net')]",
+                        "USE_SSL": "false",
+                        "TEAMS_INTEGRATED": "[toLower(string(parameters('Teams Integrated mode')))]",
+                        "AAD_TENANT_NAME": "[parameters('Azure AD Tenant name')]",
+                        "AAD_CLIENT_ID": "[parameters('Azure AD Client id')]",
+                        "AAD_CLIENT_SECRET": "[parameters('Azure AD Client Secret')]",
+                        "COOKIE_SECRET": "[uniqueString(resourceGroup().id,deployment().name)]",
+                        "TEAMS_TEAM_TABNAME": "Legitimera"
                     }
                 }
             ]
