@@ -123,7 +123,7 @@ Använd Teams App Studio för att skapa ett app-paket. Du hittar Teams App Studi
 5. Under Tabs skapa en personlig tab med namn 'Legitimering' och adress https://dinserver.se:3000/identify, ange inte website URL
 6. Under Tabs skapa en personlig tab med namn 'Kalender' och adress https://dinserver.se:3000/calendar, ange inte website URL
 7. Under Domains and Permissions ange AAD appID som du fick när du skapade AAD-appen
-8. Under Domains and Permissions ange Single-Sign-On url till URI för program-ID från AAD-appen
+8. Under Domains and Permissions ange Single-Sign-On url till URI för program-ID från AAD-appen (ex: api://myserver.com:3000/34dc9891-6a50-41a4-8e5c-acd9812b757c)
 9. Deploy!
 
 # TODO
