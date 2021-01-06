@@ -1,46 +1,48 @@
 {{> head}}
-        <link href="/public/css/eid.css" rel="stylesheet">
-        <script src="/public/js/meet.js"></script>
-    </head>
+<link href="/public/css/eid.css" rel="stylesheet">
+<script src="/public/js/meet.js"></script>
+</head>
 
-    <body class="text-center">
+<body class="text-center">
 
-        <form id="EidAuthForm" class="form-eidauth">
-            <input type="hidden" id="meetingId" value="{{meetingId}}" />
-            <img class="mb-4 logo" src="/public/logo-white.png" height="108" width="85">
-            <h1 class="h3 font-weight-normal">Legitimera dig för att ansluta till mötet</h1>
-            '<b>{{subject}}</b>'<br/><br/>
-            Möte mellan <b>{{sender}}</b> och <b>{{recipient}}</b><br/>
-            {{starttime}} -- {{endtime}}<br/><br/>
-            {{#each modules}}
-            <button class="btn btn-lg btn-success btn-block" id="{{this.functionName}}"
-                type="button">{{this.buttonName}}</button>
-            {{/each}}
-
-            <p class="mt-5 mb-3 text-muted">&copy; Botkyrka Kommun 2020 </p>
-        </form>
-        <script>
-
+    <form id="EidAuthForm" class="form-eidauth">
+        <input type="hidden" id="meetingId" value="{{meetingId}}" />
+        <img class="mb-4 logo" src="/public/logo-white.png" height="108" width="85">
+        <h1 class="h3 font-weight-normal">Legitimera dig för att ansluta till mötet</h1>
+        '<b>{{subject}}</b>'<br /><br />
+        Möte mellan <b>{{sender}}</b> och <b>{{recipient}}</b><br />
+        {{starttime}} -- {{endtime}}<br /><br />
         {{#each modules}}
-            $("#{{this.functionName}}").on("click", function () {
-                initiateRequest("p{{this.functionName}}");
-            });
-        {{/each }}
-        {{#ifCond modules.length '==' 1}}
-            $("#EidAuthForm").submit(function(e) {
-                e.preventDefault();
-                initiateRequest("p{{modules.0.functionName}}");
-            });
-        {{/ifCond}}
-        {{#ifCond modules.length '>' 1}}
-            $("#EidAuthForm").submit(function(e) {
-                e.preventDefault();
-            });
-        {{/ifCond}}
+        <button class="btn btn-lg btn-success btn-block" id="{{this.functionName}}"
+            type="button">{{this.buttonName}}</button>
+        {{/each}}
 
-        </script>
+    </form>
+    <script>
 
-    </body>
+        { {#each modules } }
+        $("#{{this.functionName}}").on("click", function () {
+            initiateRequest("p{{this.functionName}}");
+        });
+        {
+            {
+                /each }}
+                { {#ifCond modules.length '==' 1 } }
+                $("#EidAuthForm").submit(function (e) {
+                    e.preventDefault();
+                    initiateRequest("p{{modules.0.functionName}}");
+                });
+                {
+                    {
+                        /ifCond}}
+                        { {#ifCond modules.length '>' 1 } }
+                        $("#EidAuthForm").submit(function (e) {
+                            e.preventDefault();
+                        });
+                        { { /ifCond}}
+
+    </script>
+
+</body>
 
 {{> footer}}
-
