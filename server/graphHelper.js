@@ -1,5 +1,8 @@
 require("isomorphic-fetch");
-var graph = require('@microsoft/microsoft-graph-client');
+const request = require('request')
+const graph = require('@microsoft/microsoft-graph-client');
+const fs = require("fs");
+
 
 function getAuthenticatedClient(accessToken) {
     const client = graph.Client.init({
@@ -28,7 +31,38 @@ module.exports = {
         return this.attendees;
       }
     },
+
+    sendTemplateMessage: async function(accessToken, user, toName, toEmail, subject, template, tokenObject) {
+        var content = fs.readFileSync("./templates/"+template+".txt", 'utf8');
+        
+        for(var tokenKey in tokenObject) {
+            content = content.replace("$"+tokenKey+"$",tokenObject[tokenKey]);
+            subject = subject.replace("$"+tokenKey+"$",tokenObject[tokenKey]);
+        }
+
+        var messageSender = await this.sendMessage(accessToken, user, toName, toEmail, subject, content);
+        return messageSender;
+    },    
     
+    sendMessage: async function(accessToken, user, toname, toemail, subject, content) {
+        var apiResource = "/users/"+user+"/sendMail";
+        
+        const client = getAuthenticatedClient(accessToken);
+               
+        try {
+            let apiResult = await client.api(apiResource).post({ message: {
+                subject: subject,
+                body: { contentType: 'HTML', content: content },
+                toRecipients: [{ emailAddress: { name: toname, address: toemail }}]
+            }});
+                                                
+            return apiResult;
+        } catch (error) {
+            return error;
+        }        
+        
+    },
+
     createAndSendMessage: async function(accessToken, user, toname, toemail, subject, content) {
         var apiResource = "/"+user+"/sendMail";
         

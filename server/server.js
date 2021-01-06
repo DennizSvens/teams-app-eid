@@ -3,6 +3,10 @@ const hbs = require("hbs");
 const dotenv = require("dotenv");
 const fs = require("fs");
 const helmet = require('helmet');
+const SMTPServer = require("smtp-server").SMTPServer;
+const simpleParser = require('mailparser').simpleParser;
+const nodemailer = require("nodemailer");
+
 
 // Internal support modules
 const authHelper = require('./authHelper.js');
@@ -129,7 +133,9 @@ var app = express();
 app.set('trust proxy', 1) // trust first proxy
 app.set("viewengine", "hbs");
 app.use(ee_session);
-app.use(helmet());
+app.use(helmet({
+  frameguard: false
+}));
 
 app.use("/public/", express.static(__dirname + "/../public"));
 hbs.registerPartials(__dirname + "/../views/partials");
@@ -271,7 +277,7 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
             return;
         }
         res.render("config.hbs", {
-            tabUrl: process.env.BASE_URL,
+            tabUrl: process.env.BASE_URL+'/calendar',
             tabName: process.env.TEAMS_TEAM_TABNAME,
             tabId: req.query.team+'-'+req.query.channel+'-eidtab'
         });
@@ -324,6 +330,118 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
     
 }
 
+if (strbool(process.env.SMTP_ENABLED)) {
+    app.get("/view", (req, res) => {
+      var query = req._parsedUrl.query;
+
+      if (!appHelper.validateUUID(req.query.id)||!appHelper.validateUUID(req.query.key)){
+          return res.status(404).render("msgno.hbs", {
+              pageTitle: "Felaktig länk",
+              message: "Den länk du använt är inte korrekt"
+          });    
+      }
+
+      if (!fs.existsSync("./server/maildata/"+req.query.id+".json")) {
+          return res.status(404).render("msgno.hbs", {
+              pageTitle: "Meddelandet finns ej",
+              message: "Meddelandet du försökte öppna finns inte. Kontakta avsändaren."
+          });    
+      }
+
+      var fileData = JSON.parse(fs.readFileSync("./data/"+req.query.id+".json"));
+
+      if (!fileData.msgKey === req.query.key) {
+          return res.status(403).render("msgno.hbs", {
+              pageTitle: "Ej behörig",
+              message: "Du är inte behörig att läsa meddeladet. Kontakta avsändaren."
+          });    
+      }
+
+      var attachments = [];
+
+
+      res.render("msgview.hbs", {
+          pageTitle: "Visa meddelande",
+          subject: fileData.subject,
+          sender: fileData.sender,
+          id: req.query.id,
+          key: req.query.key,
+          attachments: fileData.attachments
+      });
+  });
+
+  app.get("/viewpart", (req, res) => {
+      var query = req._parsedUrl.query;
+
+      if (!appHelper.validateUUID(req.query.id)||!appHelper.validateUUID(req.query.key)){
+          return res.status(404).render("msgno.hbs", {
+              pageTitle: "Felaktig länk",
+              message: "Den länk du använt är inte korrekt"
+          });    
+      }
+
+      if (!fs.existsSync("./server/maildata/"+req.query.id+".json")) {
+          return res.status(404).render("msgno.hbs", {
+              pageTitle: "Meddelandet finns ej",
+              message: "Meddelandet du försökte öppna finns inte. Kontakta avsändaren."
+          });    
+      }
+
+      var fileData = JSON.parse(fs.readFileSync("./data/"+req.query.id+".json"));
+
+      if (!fileData.msgKey === req.query.key) {
+          return res.status(403).render("msgno.hbs", {
+              pageTitle: "Ej behörig",
+              message: "Du är inte behörig att läsa meddeladet. Kontakta avsändaren."
+          });    
+      }
+
+      try {
+          res.status(200).send(fileData[req.query.part]);
+      } catch (error) {
+          return res.status(404).send("Informationsmängden saknas.");
+      }
+  });
+
+  app.get("/viewfile", (req, res) => {
+      var query = req._parsedUrl.query;
+
+      if (!appHelper.validateUUID(req.query.id)||!appHelper.validateUUID(req.query.key)){
+          return res.status(404).render("msgno.hbs", {
+              pageTitle: "Felaktig länk",
+              message: "Den länk du använt är inte korrekt"
+          });    
+      }
+
+      if (!fs.existsSync("./server/maildata/"+req.query.id+".json")) {
+          return res.status(404).render("msgno.hbs", {
+              pageTitle: "Meddelandet finns ej",
+              message: "Meddelandet du försökte öppna finns inte. Kontakta avsändaren."
+          });    
+      }
+
+      var fileData = JSON.parse(fs.readFileSync("./server/maildata/"+req.query.id+".json"));
+
+      if (!fileData.msgKey === req.query.key) {
+          return res.status(403).render("msgno.hbs", {
+              pageTitle: "Ej behörig",
+              message: "Du är inte behörig att läsa meddeladet. Kontakta avsändaren."
+          });    
+      }
+
+      try {
+          var attachment = fileData.attachments.find(x=>x.content===req.query.file);
+          var contentData = fs.readFileSync("./server/maildata/"+req.query.id+"_"+req.query.file+".attachment");
+          res.set("Content-Type", attachment.contentType);
+          res.set("Access-Control-Allow-Origin", "*");
+          res.set("Content-Disposition","attachment;filename="+attachment.filename)
+          res.status(200).send(contentData);
+      } catch (error) {
+          return res.status(404).send("Informationsmängden saknas.");
+      }
+  });
+}
+
         
 io.use(io_session(ee_session, {
     autoSave:true
@@ -356,7 +474,7 @@ io.on("connection", function(socket) {
           var file = appHelper.getMeetingFile(global.access_token,"users/"+uid,mid).then(function(file){
 
               if (file) {
-                module.provider.authRequest(data.ssn,
+                module.provider.authRequest(file.ssn,
                 function(init) {      socket.emit("authenticationStatus", init); },
                 function(update) {    socket.emit("authenticationStatus", update); }).then(
                 function(completed) {
@@ -369,6 +487,27 @@ io.on("connection", function(socket) {
 
         });
       });
+
+      if (strbool(process.env.SMTP_ENABLED)) {
+        modules.forEach(module => {
+          socket.on("m"+module.functionName, function(data) {
+          
+              var fileData = JSON.parse(fs.readFileSync("./data/"+data.id+".json"));
+
+              module.provider.authRequest(fileData.ssn,
+              function(init) {      socket.emit("authenticationStatus", init); },
+              function(update) {    socket.emit("authenticationStatus", update); }).then(
+              function(completed) {
+                  if (completed.status==="completed") {
+                      completed.msgId = data.id,
+                      completed.msgKey = fileData.msgKey;
+                  }
+                  socket.emit("authenticationStatus", completed);
+              });
+
+          });     
+      });
+      }
 
       socket.on('registerToken', function(data) {   
         authHelper.getTokensFromUserToken(data.token, socket);
@@ -397,3 +536,124 @@ io.on("connection", function(socket) {
 server.listen(process.env.PORT, () => {
   console.log('Server startad på port '+process.env.PORT);
 });
+
+function onConnect(session, callback) {
+  if (!process.env.SENDER_HOSTS==="*" && !session.remoteAddress in process.env.SENDER_HOSTS.split(",")) {
+      console.log("Anslutning från "+session.remoteAddress+' är ej behörig')
+      return callback(new Error("You are not allowed to connect here."));
+  }
+  console.log("Anslutning från "+session.remoteAddress+' kommer bearbetas')
+  return callback(); // Accept the connection
+}
+
+function onMailFrom (address, session, callback) {
+  
+  if (!address.address in process.env.SENDER_DOMAINS.split(",")) {
+    console.log("Nekade avsändare "+address.address);
+    return callback(
+      new Error("You are not allowed to send mail here.")
+    );
+  }
+  return callback(); // Accept the address
+}
+
+function onRcptTo (address, session, callback) {
+  return callback(); // Accept the address always
+}
+
+function onClose(session) {
+  console.log("Anslutning från "+session.remoteAddress+' har avslutats.')
+}
+
+function onData(stream, session, callback) {
+     simpleParser(stream, {})
+      .then(parsed => {            
+          var msgId = uuid.v4();
+          var recipient_regexp = /([0-9]{12})\+(.*)/g;
+          var recipient_data = recipient_regexp.exec(parsed.to.value[0].address);
+
+          // This is a ugly fix to pass validation in o365 connectors, but, hey, it works!
+          if (parsed.from.value[0].address.startsWith("O365ConnectorValidation"))
+              return callback();
+
+          // Make sure we got a valid recipient
+          if (!recipient_data===null||recipient_data.length!=3) {
+              console.log("Nekade avsändare "+parsed.from.value[0].address);
+              err = new Error("The recipient email is not valid.");
+              err.responseCode = 541;
+              return callback(err);
+          }
+
+          // Do some logging
+          console.log('Meddelande från '+parsed.from.value[0].address)
+          console.log('Meddelande till '+recipient_data[2]+' (Legitimeras som '+recipient_data[1]+')')
+         
+          // Create a json file to store mail data 
+          var mailObject = {
+              sender: parsed.from.text,
+              recipient: recipient_data[2],
+              ssn: recipient_data[1],
+              msgid: parsed.messageId,
+              msgKey: uuid.v4(),
+              subject: parsed.subject,
+              text: parsed.text,
+              html: parsed.html,
+              attachments: []
+          }
+
+          // Oh, yeha, take care of the attachments
+          parsed.attachments.forEach((attachment) => {
+              if (attachment.type==='attachment')
+              {
+                  var attachmentid = uuid.v4();
+                  var newAttachment = {
+                      size: attachment.size,
+                      filename: attachment.filename,
+                      contentType: attachment.contentType,
+                      content: attachmentid
+                  }
+                  mailObject.attachments.push(newAttachment);
+                  fs.writeFileSync('./server/maildata/'+msgId+'_'+attachmentid+'.attachment',attachment.content);
+              }
+          })
+
+          // Dump it to disk
+          fs.writeFileSync('./server/maildata/'+msgId+'.json',JSON.stringify(mailObject));
+          
+          // Create a email message to the recipient
+          graphHelper.sendTemplateMessage(global.access_token, parsed.from.value[0].address, parsed.to.value[0].name, recipient_data[2], process.env.MESSAGE_SUBJECT, 'mail_content', {
+            link: process.env.BASE_URL+'/?'+msgId,
+            subject: parsed.subject,
+            sender_name: parsed.from.value[0].name,
+            sender_email: parsed.from.value[0].address
+          });
+          
+          console.log('Meddelandebearbetning klar')
+          callback();
+
+      })
+      .catch(err => {
+          console.log(err);
+      });
+  
+}
+
+var smtp_server_options = {
+  secure: false,
+  name: process.env.SMTP_DOMAIN,
+  banner: 'Node.js eID Secure Mail Server',
+  authOptional: true,
+  disabledCommands: ['AUTH'],
+  onConnect: onConnect,
+  onMailFrom: onMailFrom,
+  onRcptTo: onRcptTo,
+  onData: onData
+}
+
+const smtp_server = new SMTPServer(smtp_server_options);
+smtp_server.listen(25, undefined, () => {
+  console.log('SMTP Server startad på port 25');
+})
+smtp_server.on("error", (error) => {
+  console.log(error);
+})

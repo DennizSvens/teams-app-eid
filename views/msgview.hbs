@@ -1,0 +1,31 @@
+{{> head}}
+        <link href="/public/css/eid.css" rel="stylesheet">
+        <script>
+            downloadFile = function(fileid) {
+                window.location.href = "/viewfile?id={{id}}&key={{key}}&file="+fileid;
+            }
+        </script>
+    </head>
+
+    <body class="text-center">
+
+        <div style="width: 80%; height:80%">
+        <table width="80%"><tr><td width="100"><img class="mb-4 logo" src="/public/logo-white.png" height="108" width="85"></td><td align="left"><span class="h5 font-weight-normal">
+            <b>Visar säkert meddelande</b><br/>Avsändare: {{sender}}<br/>Ärende: {{subject}}</span></td><td width="200" align="left">
+                {{#ifCond attachments.length '>=' 1}}
+                Bilagor:<br/>
+                {{#each attachments}}<a href="#" onclick="downloadFile('{{this.content}}');return false;">{{this.filename}}</a><br/>{{/each}}
+                {{/ifCond}}
+            </td></tr></table>
+        <iframe height="80%" width="100%" src="/viewpart?id={{id}}&key={{key}}&part=html" style="background-color: white;">
+        </div>
+        <script>
+            
+            initializeApp(false);
+
+        </script>
+
+    </body>
+
+{{> footer}}
+

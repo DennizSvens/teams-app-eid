@@ -1,0 +1,44 @@
+{{> head}}
+        <link href="/public/css/eid.css" rel="stylesheet">
+        <script src="/public/js/msg.js"></script>
+    </head>
+
+    <body class="text-center">
+
+        <form id="EidAuthForm" class="form-eidauth">
+            <input type="hidden" id="msgId" value="{{msgId}}" />
+            <img class="mb-4 logo" src="/public/logo-white.png" height="108" width="85">
+            <h1 class="h3 font-weight-normal">Legitimera dig för att läsa meddelandet.</h1>
+            '<b>{{subject}}</b>'<br/><br/>
+            {{#each modules}}
+            <button class="btn btn-lg btn-success btn-block" id="{{this.functionName}}"
+                type="button">{{this.buttonName}}</button>
+            {{/each}}
+
+            <p class="mt-5 mb-3 text-muted">&copy; Hultbybruk Kommun 2020 </p>
+        </form>
+        <script>
+
+        {{#each modules}}
+            $("#{{this.functionName}}").on("click", function () {
+                initiateRequest("m{{this.functionName}}");
+            });
+        {{/each }}
+        {{#ifCond modules.length '==' 1}}
+            $("#EidAuthForm").submit(function(e) {
+                e.preventDefault();
+                initiateRequest("m{{modules.0.functionName}}");
+            });
+        {{/ifCond}}
+        {{#ifCond modules.length '>' 1}}
+            $("#EidAuthForm").submit(function(e) {
+                e.preventDefault();
+            });
+        {{/ifCond}}
+
+        </script>
+
+    </body>
+
+{{> footer}}
+
