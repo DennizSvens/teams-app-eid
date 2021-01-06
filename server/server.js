@@ -259,48 +259,6 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
     });
   });
 
-  app.get("/meet", (req, res) => {
-    var query = req._parsedUrl.query;
-
-    if (!query.length == 73) {
-      res.status(404);
-      res.send();
-    } else {
-      var mid = query.substring(37, 73);
-      var uid = query.substring(0, 36);
-
-      if (appHelper.validateUUID(mid) && appHelper.validateUUID(uid)) {
-        appHelper
-          .getMeetingFile(global.access_token, "users/" + uid, mid)
-          .then(function (file) {
-            if (file.statusCode) {
-              res.render("nomeet.hbs", {
-                pageTitle: "Mötesportalen",
-                title: "Mötet inställt",
-                message:
-                  "Mötet har ställts in. Kontakta den du bokade mötet med för mer information.",
-                meetingId: req.query.mid,
-              });
-            } else {
-              res.render("meet.hbs", {
-                pageTitle: "Mötesportalen",
-                modules: modules,
-                starttime: appHelper.formatStringTime(file.start),
-                endtime: appHelper.formatStringTime(file.end),
-                subject: file.subject,
-                sender: file.organizer_name,
-                recipient: file.name,
-                meetingId: query,
-              });
-            }
-          });
-      } else {
-        res.status(404);
-        res.send();
-      }
-    }
-  });
-
   app.get("/identify", (req, res) => {
     res.render("identify.hbs", {
       pageTitle: "Legitimera medborgare",
@@ -308,63 +266,6 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
       teamsMode: true,
     });
   });
-
-  app.get("/calendar", (req, res) => {
-    if (!req.session.isAuthenticated) {
-      res.status(403);
-      res.send();
-      return;
-    }
-    res.render("calendar.hbs", {
-      pageTitle: "Säkra möten",
-    });
-  });
-
-  app.get("/calendar/events", (req, res) => {
-    if (!req.session.isAuthenticated) {
-      res.status(403);
-      res.send();
-      return;
-    }
-    graphHelper
-      .calendarView(
-        req.session.access_token,
-        "me",
-        req.query.start,
-        req.query.end
-      )
-      .then(function (result) {
-        res.status(200);
-        res.send(result);
-      });
-  });
-
-  app.get("/config", (req, res) => {
-    if (!req.session.isAuthenticated) {
-      res.status(403);
-      res.send();
-      return;
-    }
-    res.render("config.hbs", {
-      tabUrl: process.env.BASE_URL + "/calendar",
-      tabName: process.env.TEAMS_TEAM_TABNAME,
-      tabId: req.query.team + "-" + req.query.channel + "-eidtab",
-    });
-  });
-
-  app.get("/logout", function (req, res) {
-    if (!req.session.isAuthenticated) {
-      res.status(403);
-      res.send();
-      return;
-    }
-    req.session.accessToken = "";
-    req.session.refreshToken = "";
-    req.session.isAuthenticated = false;
-    res.status(200);
-    res.redirect("/");
-  });
-
   app.get("/login", (req, res) => {
     if (req.query.code !== undefined) {
       authHelper.getTokenFromCode(
@@ -390,6 +291,104 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
       res.send();
     }
   });
+  app.get("/logout", function (req, res) {
+    if (!req.session.isAuthenticated) {
+      res.status(403);
+      res.send();
+      return;
+    }
+    req.session.accessToken = "";
+    req.session.refreshToken = "";
+    req.session.isAuthenticated = false;
+    res.status(200);
+    res.redirect("/");
+  });
+
+  app.get("/config", (req, res) => {
+    if (!req.session.isAuthenticated) {
+      res.status(403);
+      res.send();
+      return;
+    }
+    res.render("config.hbs", {
+      tabUrl: process.env.BASE_URL + "/calendar",
+      tabName: process.env.TEAMS_TEAM_TABNAME,
+      tabId: req.query.team + "-" + req.query.channel + "-eidtab",
+    });
+  });
+  if (strbool(process.env.SECURE_MEETINGS_ENABLED)) {
+    app.get("/meet", (req, res) => {
+      var query = req._parsedUrl.query;
+
+      if (!query.length == 73) {
+        res.status(404);
+        res.send();
+      } else {
+        var mid = query.substring(37, 73);
+        var uid = query.substring(0, 36);
+
+        if (appHelper.validateUUID(mid) && appHelper.validateUUID(uid)) {
+          appHelper
+            .getMeetingFile(global.access_token, "users/" + uid, mid)
+            .then(function (file) {
+              if (file.statusCode) {
+                res.render("nomeet.hbs", {
+                  pageTitle: "Mötesportalen",
+                  title: "Mötet inställt",
+                  message:
+                    "Mötet har ställts in. Kontakta den du bokade mötet med för mer information.",
+                  meetingId: req.query.mid,
+                });
+              } else {
+                res.render("meet.hbs", {
+                  pageTitle: "Mötesportalen",
+                  modules: modules,
+                  starttime: appHelper.formatStringTime(file.start),
+                  endtime: appHelper.formatStringTime(file.end),
+                  subject: file.subject,
+                  sender: file.organizer_name,
+                  recipient: file.name,
+                  meetingId: query,
+                });
+              }
+            });
+        } else {
+          res.status(404);
+          res.send();
+        }
+      }
+    });
+
+    app.get("/calendar", (req, res) => {
+      if (!req.session.isAuthenticated) {
+        res.status(403);
+        res.send();
+        return;
+      }
+      res.render("calendar.hbs", {
+        pageTitle: "Säkra möten",
+      });
+    });
+
+    app.get("/calendar/events", (req, res) => {
+      if (!req.session.isAuthenticated) {
+        res.status(403);
+        res.send();
+        return;
+      }
+      graphHelper
+        .calendarView(
+          req.session.access_token,
+          "me",
+          req.query.start,
+          req.query.end
+        )
+        .then(function (result) {
+          res.status(200);
+          res.send(result);
+        });
+    });
+  }
 } else {
   app.get("/", (req, res) => {
     res.render("identify.hbs", {
@@ -677,124 +676,128 @@ server.listen(process.env.PORT, () => {
   console.log("Server startad på port " + process.env.PORT);
 });
 
-function onConnect(session, callback) {
-  if (
-    !process.env.SENDER_HOSTS === "*" &&
-    !session.remoteAddress in process.env.SENDER_HOSTS.split(",")
-  ) {
-    console.log("Anslutning från " + session.remoteAddress + " är ej behörig");
-    return callback(new Error("You are not allowed to connect here."));
-  }
-  console.log("Anslutning från " + session.remoteAddress + " kommer bearbetas");
-  return callback(); // Accept the connection
-}
-
-function onMailFrom(address, session, callback) {
-  if (!address.address in process.env.SENDER_DOMAINS.split(",")) {
-    console.log("Nekade avsändare " + address.address);
-    return callback(new Error("You are not allowed to send mail here."));
-  }
-  return callback(); // Accept the address
-}
-
-function onRcptTo(address, session, callback) {
-  return callback(); // Accept the address always
-}
-
-function onClose(session) {
-  console.log("Anslutning från " + session.remoteAddress + " har avslutats.");
-}
-
-function onData(stream, session, callback) {
-  simpleParser(stream, {})
-    .then((parsed) => {
-      var msgId = uuid.v4();
-      var recipient_regexp = /([0-9]{12})\+(.*)/g;
-      var recipient_data = recipient_regexp.exec(parsed.to.value[0].address);
-
-      // This is a ugly fix to pass validation in o365 connectors, but, hey, it works!
-      if (parsed.from.value[0].address.startsWith("O365ConnectorValidation"))
-        return callback();
-
-      // Make sure we got a valid recipient
-      if (!recipient_data === null || recipient_data.length != 3) {
-        console.log("Nekade avsändare " + parsed.from.value[0].address);
-        err = new Error("The recipient email is not valid.");
-        err.responseCode = 541;
-        return callback(err);
-      }
-
-      // Do some logging
-      console.log("Meddelande från " + parsed.from.value[0].address);
-      console.log(
-        "Meddelande till " +
-          recipient_data[2] +
-          " (Legitimeras som " +
-          recipient_data[1] +
-          ")"
-      );
-
-      // Create a json file to store mail data
-      var mailObject = {
-        sender: parsed.from.text,
-        recipient: recipient_data[2],
-        ssn: recipient_data[1],
-        msgid: parsed.messageId,
-        msgKey: uuid.v4(),
-        subject: parsed.subject,
-        text: parsed.text,
-        html: parsed.html,
-        attachments: [],
-      };
-
-      // Oh, yeha, take care of the attachments
-      parsed.attachments.forEach((attachment) => {
-        if (attachment.type === "attachment") {
-          var attachmentid = uuid.v4();
-          var newAttachment = {
-            size: attachment.size,
-            filename: attachment.filename,
-            contentType: attachment.contentType,
-            content: attachmentid,
-          };
-          mailObject.attachments.push(newAttachment);
-          fs.writeFileSync(
-            "./server/maildata/" + msgId + "_" + attachmentid + ".attachment",
-            attachment.content
-          );
-        }
-      });
-
-      // Dump it to disk
-      fs.writeFileSync(
-        "./server/maildata/" + msgId + ".json",
-        JSON.stringify(mailObject)
-      );
-
-      // Create a email message to the recipient
-      graphHelper.sendTemplateMessage(
-        global.access_token,
-        parsed.from.value[0].address,
-        parsed.to.value[0].name,
-        recipient_data[2],
-        process.env.MESSAGE_SUBJECT,
-        "mail_content",
-        {
-          link: process.env.BASE_URL + "/?" + msgId,
-          subject: parsed.subject,
-          sender_name: parsed.from.value[0].name,
-          sender_email: parsed.from.value[0].address,
-        }
-      );
-
-      console.log("Meddelandebearbetning klar");
-      callback();
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-}
 if (strbool(process.env.SMTP_ENABLED)) {
+  function onConnect(session, callback) {
+    if (
+      !process.env.SENDER_HOSTS === "*" &&
+      !session.remoteAddress in process.env.SENDER_HOSTS.split(",")
+    ) {
+      console.log(
+        "Anslutning från " + session.remoteAddress + " är ej behörig"
+      );
+      return callback(new Error("You are not allowed to connect here."));
+    }
+    console.log(
+      "Anslutning från " + session.remoteAddress + " kommer bearbetas"
+    );
+    return callback(); // Accept the connection
+  }
+
+  function onMailFrom(address, session, callback) {
+    if (!address.address in process.env.SENDER_DOMAINS.split(",")) {
+      console.log("Nekade avsändare " + address.address);
+      return callback(new Error("You are not allowed to send mail here."));
+    }
+    return callback(); // Accept the address
+  }
+
+  function onRcptTo(address, session, callback) {
+    return callback(); // Accept the address always
+  }
+
+  function onClose(session) {
+    console.log("Anslutning från " + session.remoteAddress + " har avslutats.");
+  }
+
+  function onData(stream, session, callback) {
+    simpleParser(stream, {})
+      .then((parsed) => {
+        var msgId = uuid.v4();
+        var recipient_regexp = /([0-9]{12})\+(.*)/g;
+        var recipient_data = recipient_regexp.exec(parsed.to.value[0].address);
+
+        // This is a ugly fix to pass validation in o365 connectors, but, hey, it works!
+        if (parsed.from.value[0].address.startsWith("O365ConnectorValidation"))
+          return callback();
+
+        // Make sure we got a valid recipient
+        if (!recipient_data === null || recipient_data.length != 3) {
+          console.log("Nekade avsändare " + parsed.from.value[0].address);
+          err = new Error("The recipient email is not valid.");
+          err.responseCode = 541;
+          return callback(err);
+        }
+
+        // Do some logging
+        console.log("Meddelande från " + parsed.from.value[0].address);
+        console.log(
+          "Meddelande till " +
+            recipient_data[2] +
+            " (Legitimeras som " +
+            recipient_data[1] +
+            ")"
+        );
+
+        // Create a json file to store mail data
+        var mailObject = {
+          sender: parsed.from.text,
+          recipient: recipient_data[2],
+          ssn: recipient_data[1],
+          msgid: parsed.messageId,
+          msgKey: uuid.v4(),
+          subject: parsed.subject,
+          text: parsed.text,
+          html: parsed.html,
+          attachments: [],
+        };
+
+        // Oh, yeha, take care of the attachments
+        parsed.attachments.forEach((attachment) => {
+          if (attachment.type === "attachment") {
+            var attachmentid = uuid.v4();
+            var newAttachment = {
+              size: attachment.size,
+              filename: attachment.filename,
+              contentType: attachment.contentType,
+              content: attachmentid,
+            };
+            mailObject.attachments.push(newAttachment);
+            fs.writeFileSync(
+              "./server/maildata/" + msgId + "_" + attachmentid + ".attachment",
+              attachment.content
+            );
+          }
+        });
+
+        // Dump it to disk
+        fs.writeFileSync(
+          "./server/maildata/" + msgId + ".json",
+          JSON.stringify(mailObject)
+        );
+
+        // Create a email message to the recipient
+        graphHelper.sendTemplateMessage(
+          global.access_token,
+          parsed.from.value[0].address,
+          parsed.to.value[0].name,
+          recipient_data[2],
+          process.env.MESSAGE_SUBJECT,
+          "mail_content",
+          {
+            link: process.env.BASE_URL + "/?" + msgId,
+            subject: parsed.subject,
+            sender_name: parsed.from.value[0].name,
+            sender_email: parsed.from.value[0].address,
+          }
+        );
+
+        console.log("Meddelandebearbetning klar");
+        callback();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
   var smtp_server_options = {
     secure: false,
     name: process.env.SMTP_DOMAIN,
