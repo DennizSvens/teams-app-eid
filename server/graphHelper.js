@@ -189,7 +189,7 @@ module.exports = {
     calendarView: async function(accessToken,user,startDateTime,endDateTime) {
 
         var apiResource = "/"+user+"/calendar/calendarView?startDateTime="+encodeURIComponent(startDateTime)+"&endDateTime="+encodeURIComponent(endDateTime)+
-            "&$expand="+encodeURIComponent("extensions($filter=id eq 'Microsoft.OutlookServices.OpenTypeExtension.se.botkyrka.eid')")+","+
+            "&$top=1000&$expand="+encodeURIComponent("extensions($filter=id eq 'Microsoft.OutlookServices.OpenTypeExtension.se.botkyrka.eid')")+","+
             encodeURIComponent("singleValueExtendedProperties($filter=id eq 'String {148587e4-2c99-4f6d-8a50-25bfbfb9c428} Name eIDTag')");
         var result = [];
         
