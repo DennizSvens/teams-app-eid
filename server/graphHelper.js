@@ -142,7 +142,7 @@ module.exports = {
 
     getSpecificMeeting: async function(accessToken,user,meetingId) {
         var apiResource = "/"+user+"/events?$expand="+encodeURIComponent("extensions($filter=id eq 'Microsoft.OutlookServices.OpenTypeExtension.se.botkyrka.eid')")+","+
-            encodeURIComponent("singleValueExtendedProperties($filter=id eq 'String {148587e4-2c99-4f6d-8a50-25bfbfb9c428} Name eIDTag')")+"&$filter="+
+            encodeURIComponent("singleValueExtendedProperties($filter=id eq 'String {148587e4-2c99-4f6d-8a50-25bfbfb9c428} Name eIDTag')")+"&$top=1000&$filter="+
             encodeURIComponent("singleValueExtendedProperties/Any(ep: ep/id eq 'String {148587e4-2c99-4f6d-8a50-25bfbfb9c428} Name eIDTag' and ep/value eq '"+meetingId+"')");
 
         const client = getAuthenticatedClient(accessToken);
