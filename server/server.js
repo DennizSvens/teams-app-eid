@@ -6,6 +6,7 @@ const helmet = require("helmet");
 const SMTPServer = require("smtp-server").SMTPServer;
 const simpleParser = require("mailparser").simpleParser;
 const nodemailer = require("nodemailer");
+var jwt = require("jsonwebtoken");
 
 // Internal support modules
 const authHelper = require("./authHelper.js");
@@ -36,15 +37,30 @@ console.log(
 );
 
 // Initialize the application token from azure AD
-authHelper.getApplicationToken(function (token, err) {
-  if (!err) {
-    console.log("Hämtade åtkomstnyckel");
-    global.access_token = token;
+function getApplicationToken(token, err) {
+  authHelper.getApplicationToken(function (token, err) {
+    if (!err) {
+      console.log("Hämtade åtkomstnyckel");
+      global.access_token = token;
+      console.log(global.access_token);
+    } else {
+      console.log("Kunde inte hämta åtkomstnyckel");
+      process.exit();
+    }
+  });
+}
+
+function tokenExpired(token) {
+  var jwtToken = jwt.decode(token);
+  var current_time = (Date.now() / 1000) | 0;
+  if (jwtToken.exp < current_time) {
+    return true;
   } else {
-    console.log("Kunde inte hämta åtkomstnyckel");
-    process.exit();
+    return false;
   }
-});
+}
+
+getApplicationToken();
 
 // Definition of a module
 class Module {
@@ -326,7 +342,9 @@ if (strbool(process.env.TEAMS_INTEGRATED)) {
       } else {
         var mid = query.substring(37, 73);
         var uid = query.substring(0, 36);
-
+        if (tokenExpired(global.access_token)) {
+          getApplicationToken();
+        }
         if (appHelper.validateUUID(mid) && appHelper.validateUUID(uid)) {
           appHelper
             .getMeetingFile(global.access_token, "users/" + uid, mid)
@@ -575,7 +593,9 @@ io.on("connection", function (socket) {
       socket.on("p" + module.functionName, function (data) {
         var mid = data.meeting.substring(37, 73);
         var uid = data.meeting.substring(0, 36);
-
+        if (tokenExpired(global.access_token)) {
+          getApplicationToken();
+        }
         var file = appHelper
           .getMeetingFile(global.access_token, "users/" + uid, mid)
           .then(function (file) {
@@ -776,6 +796,9 @@ if (strbool(process.env.SMTP_ENABLED)) {
         );
 
         // Create a email message to the recipient
+        if (tokenExpired(global.access_token)) {
+          getApplicationToken();
+        }
         graphHelper.sendTemplateMessage(
           global.access_token,
           parsed.from.value[0].address,
