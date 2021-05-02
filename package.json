@@ -27,6 +27,7 @@
     "hbs": "^4.1.1",
     "helmet": "^3.23.3",
     "isomorphic-fetch": "^3.0.0",
+    "jsonwebtoken": "^8.5.1",
     "mailparser": "^2.7.7",
     "moment": "^2.29.1",
     "moment-round": "^1.0.1",
