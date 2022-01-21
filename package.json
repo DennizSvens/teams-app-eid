@@ -33,7 +33,7 @@
     "moment-round": "^1.0.1",
     "mongoose": "^5.11.10",
     "neat-csv": "^5.2.0",
-    "nodemailer": "^6.4.8",
+    "nodemailer": "^6.6.1",
     "oauth": "^0.9.15",
     "q": "^1.5.1",
     "request": "^2.88.2",
